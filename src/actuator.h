@@ -27,7 +27,7 @@ public:
 	std::vector<Token> params;
 	Position pos;
 
-	Instruction():type(0), pos(0, 0){
+	Instruction():type(kInstruction), pos(0, 0){
 	}
 	virtual ~Instruction(){}
 };
