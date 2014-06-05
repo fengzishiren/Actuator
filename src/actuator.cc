@@ -48,17 +48,18 @@ void Actuator::load(const std::string& script_code) {
 			tokens.push_back(lexer.next_token());
 		} while (!lexer.finish() && expect == lexer.col);
 
-		inst.name = tokens[0].token;
-		inst.pos = tokens[0].pos;
-
 		if (tokens.empty() || tokens[0].type != kName) {
 			error("语法错误", tokens[0].pos);
 		}
+
+		inst.name = tokens[0].token;
+		inst.pos = tokens[0].pos;
+
 		if (tokens.size() == 1) {
 			inst.type = kInstruction;
 		} else if (tokens[1].type == kColon) {
 			inst.type = kLabel;
-		} else { //�����ָ����Ӳ���
+		} else { //处理指令参数
 			inst.type = kInstruction;
 			for (size_t i = 1; i < tokens.size(); ++i) {
 				switch (tokens[i].type) {
