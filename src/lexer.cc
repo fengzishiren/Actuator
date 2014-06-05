@@ -58,17 +58,36 @@ bool Lexer::get_string(std::string& name) {
 	}
 	return found;
 }
-bool Lexer::get_real(std::string& name) {
+
+//bool Lexer::get_real(std::string& name) {
+//	bool found = false;
+//	if (get_int(name) && text[offset] == '.') {
+//		name += '.';
+//		forward();
+//		if (finish()) {
+//			error("语法错误");
+//		}
+//		if (get_int(name)) {
+//			found = true;
+//		}
+//	}
+//	return found;
+//}
+
+bool Lexer::get_num(std::string& name, bool& is_int) {
 	bool found = false;
-	if (get_int(name) && text[offset] == '.') {
+	is_int = true;
+	if ((found = get_int(name)) && text[offset] == '.') {
+		is_int = false;
 		name += '.';
 		forward();
 		if (finish()) {
-			error("语法错误");
+			error("语法错误", Position(row, col));
 		}
 		if (get_int(name)) {
 			found = true;
-		}
+		} else
+			error("语法错误", Position(row, col));
 	}
 	return found;
 }
@@ -91,15 +110,18 @@ bool Lexer::get_int(std::string& name) {
 Token Lexer::next_token() {
 	std::string name;
 	skip_space();
-	if (get_name(name)) {
+
+	bool isint;
+
+	if (get_name(name))
 		return Token(kName, name, row, col);
-	}
 	if (get_string(name))
 		return Token(kString, name, row, col);
-	if (get_real(name))
-		return Token(kReal, name, row, col);
-	if (get_int(name))
-		return Token(kInt, name, row, col);
+
+	if (get_num(name, isint))
+		return isint ?
+				Token(kInt, name, row, col) : Token(kReal, name, row, col);
+
 	if (text[offset] == ':')
 		return Token(kString, name, row, col);
 	else

@@ -61,7 +61,7 @@ public:
 
     bool get_name(std::string& name);
     bool get_string(std::string& name);
-    bool get_real(std::string& name);
+    bool get_num(std::string& name, bool& is_int);
     bool get_int(std::string& name);
     void skip_space();
     void forward();
