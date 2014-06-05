@@ -1,4 +1,8 @@
 [语言设计：][1]
+
+
+原文地址：http://www.cppblog.com/vczh/archive/2008/07/10/55793.html
+
 这门语言使用如下语法：
  
 > * <值>：值可以是整数、小数、字符串或名字。
@@ -42,5 +46,7 @@ FAIL:
 假设输入的数字为n，那么在n>2的时候，如果2到n-1中的任何一个数字能够整除n的话，那么n就不是质数了。
 
 
+[原始地址][2]
 
 [1]: http://www.cppblog.com/vczh/archive/2008/07/10/55793.html
+[2]: http://www.cppblog.com/vczh/archive/2008/07/10/55793.html
