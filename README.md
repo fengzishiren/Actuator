@@ -10,7 +10,7 @@
 
 
 
-[语言设计：][1]
+### 语言设计
 
 
 原文地址：http://www.cppblog.com/vczh/archive/2008/07/10/55793.html
