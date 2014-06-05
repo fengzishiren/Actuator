@@ -75,7 +75,7 @@ bool Lexer::get_real(std::string& name) {
 
 bool Lexer::get_int(std::string& name) {
 	bool found = false;
-	if ('0' <= text[offset] <= '9') {
+	if ('0' <= text[offset] && text[offset] <= '9') {
 		found = true;
 		do {
 			name += text[offset];
