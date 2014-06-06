@@ -26,35 +26,47 @@ void Env::put(const std::string& name, const std::string& value) {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-Actuator::Actuator() {
-
+Actuator::Actuator(Parser& _parser) :
+		parser(_parser) {
 }
 
 Actuator::~Actuator() {
 }
 
-void buildInstruction() {
+void Actuator::load() {
+	Instruction inst;
+	while (parser.has_next()) {
+		parser.next(inst);
+		if (inst.type == kLabel) {
+			std::map<std::string, size_t>::iterator it = labels.find(inst.name);
+			if (it == labels.end())
+				labels[inst.name] = insts.size();
+		} else
+			insts.push_back(inst);
+	}
+
 }
 
 /*
  * 将Token转换为Instruction{type, name, params}
  *
- */
+
 void Actuator::load(const std::string& script_code) {
 	Lexer lexer(script_code);
 	std::vector<Token> tokens;
-	Instruction inst;
 	while (!lexer.finish()) {
+		Log::info("新的一行");
+
+		Instruction inst;
 		tokens.clear();
 
-		Log::info("新的一行");
-		for (; !lexer.finish();) {
-			size_t expect = lexer.row;
-			Token tok = lexer.next_token();
-			Log::info(tok.to_str());
-			if (expect == lexer.row || lexer.finish())
+		for (;;) {
+			Token token;
+			int stat = lexer.next_token(token);
+			if (stat >= 0)
 				break;
-			tokens.push_back(tok);
+			Log::info(token.to_str());
+			tokens.push_back(token);
 		}
 
 		if (tokens.empty())
@@ -99,6 +111,8 @@ void Actuator::load(const std::string& script_code) {
 	}
 	Log::info("加载完毕！");
 }
+*/
+
 /*
  * 如果是变量 存在则直接取出 否则报错 ？不太妥当
  * 其他直接返回
@@ -123,24 +137,24 @@ bool is_int(const std::string& number) {
 }
 
 long long str2int(const std::string& val) {
-	//char *err = NULL;
-	//long long retval = std::strtoll(val.c_str(), &err, 10);
-	//if (*err == '\0')
-	//return retval;
+//char *err = NULL;
+//long long retval = std::strtoll(val.c_str(), &err, 10);
+//if (*err == '\0')
+//return retval;
 
-	//忽略错误
+//忽略错误
 	return std::strtoll(val.c_str(), NULL, 10);
 }
 
 long double str2double(const std::string& val) {
-	//char *err = NULL;
-	//long double retval = std::strtold(val.c_str(), &err);
-	//if (*err == '\0')
-	//return retval;
-	//else
-	//
-	//error!
-	//return 0.0;
+//char *err = NULL;
+//long double retval = std::strtold(val.c_str(), &err);
+//if (*err == '\0')
+//return retval;
+//else
+//
+//error!
+//return 0.0;
 	return std::strtold(val.c_str(), NULL);
 
 }
@@ -210,6 +224,8 @@ std::string eval(const std::string& cmd, const std::string& arg1,
 void Actuator::run(Env& env) {
 	for (size_t idx = 0; idx < insts.size(); /*++idx*/) {
 		Instruction& pc = insts[idx]; //模拟PC寄存器
+		Log::info(pc.to_str());
+
 		if (pc.name == "exit") {
 			if (pc.params.empty())
 				break;

@@ -7,30 +7,14 @@
 #ifndef ACTUATOR_H_
 #define ACTUATOR_H_
 
-//#include <iostream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <map>
 
-#include "lexer.h"
+#include "parser.h"
 
 namespace Script {
-
-enum InstructionType {
-	kInstruction, kLabel
-};
-
-class Instruction {
-public:
-	InstructionType type;
-	std::string name;
-	std::vector<Token> params;
-	Position pos;
-
-	Instruction():type(kInstruction), pos(-1, -1){
-	}
-	virtual ~Instruction(){}
-};
 
 /*
  *
@@ -53,19 +37,21 @@ public:
 //};
 
 /**
- * ִ������
+ * 执行引擎
  */
 class Actuator {
 private:
+	Parser& parser;
 	//待执行指令集
 	std::vector<Instruction> insts;
 	//指令label索引
 	std::map<std::string, size_t> labels;
 public:
-	Actuator();
+	Actuator(Parser& parser);
 	virtual ~Actuator();
-
-	void load(const std::string& script_code);
+	//解析并加载所有指令
+	void load();
+	//void load(const std::string& script_code);
 	void run(Env& env);
 };
 
