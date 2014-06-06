@@ -1,0 +1,17 @@
+print "Please input a number:"
+read num
+if num < 2 goto FAIL
+if num == 2 goto SUCC
+mov eax 2
+
+L:
+  if num == eax goto SUCCESS
+  mod edx num eax
+  if edx == 0 goto FAIL
+  add eax eax 1
+  goto L
+
+SUC:
+  print "OK!"
+FAIL:
+  print num "not zhishu"
