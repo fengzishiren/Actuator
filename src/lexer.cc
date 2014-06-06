@@ -19,7 +19,6 @@ void Lexer::forward() {
 	} else {
 		col++;
 	}
-	//Log::info("x, y %d, %d", row, col);
 }
 
 void Lexer::skip_space() {
@@ -122,32 +121,42 @@ bool Lexer::get_cmp(std::string& name) {
 	return !name.empty();
 }
 
-Token Lexer::next_token() {
+/*
+ * return =0 finish
+ * 		  >0 newLine 具体的数值代表遇到几个换行符
+ *
+ */
+int Lexer::next_token(Token& token) {
+	int stat = 0;
 	std::string name;
 	bool isint;
 	size_t x = row, y = col;
-	skip_space();
+	skip_space();//跳过所有的无效字符 空白换行等。。。
+
+	if (finish())
+		return 0;
+	else if (row != x) {
+		return row - x;
+	}
 
 	if (get_name(name))
-		return Token(kName, name, x, y);
+		token.init(kName, name, x, y);
 
-	if (get_string(name))
-		return Token(kString, name, x, y);
+	else if (get_string(name))
+		token.init(kString, name, x, y);
 
-	if (get_num(name, isint))
-		return isint ? Token(kInt, name, x, y) : Token(kReal, name, x, y);
+	else if (get_num(name, isint))
+		token.init(isint ? kInt : kReal, name, x, y);
 
-	if (get_cmp(name))
-		return Token(KCmp, name, x, y);
+	else if (get_cmp(name))
+		token.init(KCmp, name, x, y);
 
-	if (text[offset] == ':') {
+	else if (text[offset] == ':') {
 		forward();
-		return Token(kColon, name += ':', x, y);
-	}
-	if (finish())
-		return Token(kString, name, x, y); //理论不可达
-	error("语法错误next_token", Position(x, y));
-	return Token(kString, name, x, y); //理论不可达
+		token.init(kColon, name += ':', x, y);
+	} else
+		error("语法错误next_token", Position(x, y));
+	return -1; //理论不可达
 }
 
 } /* namespace Script */

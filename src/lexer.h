@@ -6,11 +6,13 @@
 
 #ifndef LEXER_H_
 #define LEXER_H_
+
 #include <iostream>
 #include <string>
 #include <sstream>
 
 #include "lexer.h"
+
 
 namespace Script {
 
@@ -41,14 +43,23 @@ public:
 	std::string token;
 	Position pos;
 
-	Token(TokenType _type, std::string _token, size_t row, size_t col) :
-			type(_type), token(_token), pos(row, col) {
+	Token() :
+			type(kInt), pos(-1, -1) {
+	}
+
+	void init(TokenType _type, const std::string& _token, size_t row,
+			size_t col) {
+		type = _type;
+		token = _token;
+		pos = Position(row, col);
 	}
 
 	std::string to_str() const {
 		std::stringstream ss;
-		ss << "TokenType: " << type << "\t" << "Token: " << token << "\t"
-				<< " Pos: " << pos.to_str();
+		static const char *typeinfo[] = { "kInt", "kReal", "kString", "KCmp",
+				"kName", "kColon" };
+		ss << "TokenType: " << typeinfo[type] << "\t" << "Token: " << token
+				<< "\t" << " Pos: " << pos.to_str();
 		return ss.str();
 	}
 };
@@ -74,7 +85,7 @@ public:
 	bool get_cmp(std::string& name);
 	void skip_space();
 	void forward();
-	Token next_token();
+	int next_token(Token& token);
 };
 
 } /* namespace Script */
