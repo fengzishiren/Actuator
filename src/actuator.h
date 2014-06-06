@@ -27,7 +27,7 @@ public:
 	std::vector<Token> params;
 	Position pos;
 
-	Instruction():type(kInstruction), pos(0, 0){
+	Instruction():type(kInstruction), pos(-1, -1){
 	}
 	virtual ~Instruction(){}
 };
@@ -45,6 +45,12 @@ public:
 	void put(const std::string& name, const std::string& value);
 
 };
+//
+//class Plugin {
+//public:
+//	virtual void execute(const Instruction& inst, Env& e) = 0;
+//	virtual ~Plugin() {}
+//};
 
 /**
  * ִ������
