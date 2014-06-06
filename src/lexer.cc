@@ -38,9 +38,7 @@ bool Lexer::get_name(std::string& name) {
 				&& (('a' <= text[offset] && text[offset] <= 'z')
 						|| text[offset] == '_'
 						|| ('0' <= text[offset] && text[offset] <= '9')));
-		if (finish()) {
-			error("语法错误");
-		}
+
 	}
 	return found;
 }
@@ -52,27 +50,10 @@ bool Lexer::get_string(std::string& name) {
 			name += text[offset];
 			forward();
 		} while (!finish() && text[offset] != '\"');
-		if (finish()) {
-			error("语法错误");
-		}
 	}
 	return found;
 }
 
-//bool Lexer::get_real(std::string& name) {
-//	bool found = false;
-//	if (get_int(name) && text[offset] == '.') {
-//		name += '.';
-//		forward();
-//		if (finish()) {
-//			error("语法错误");
-//		}
-//		if (get_int(name)) {
-//			found = true;
-//		}
-//	}
-//	return found;
-//}
 
 bool Lexer::get_num(std::string& name, bool& is_int) {
 	bool found = false;
@@ -81,10 +62,8 @@ bool Lexer::get_num(std::string& name, bool& is_int) {
 		is_int = false;
 		name += '.';
 		forward();
-		if (finish()) {
-			error("语法错误", Position(row, col));
-		}
-		if (get_int(name)) {
+
+		if (!finish() && get_int(name)) {
 			found = true;
 		} else
 			error("语法错误", Position(row, col));
@@ -100,11 +79,29 @@ bool Lexer::get_int(std::string& name) {
 			name += text[offset];
 			forward();
 		} while (!finish() && '0' <= text[offset] && text[offset] <= '9');
-		if (finish()) {
-			error("语法错误", Position(row, col));
-		}
 	}
 	return found;
+}
+// > < = >= <= !=
+bool Lexer::get_cmp(std::string& name) {
+	switch (text[offset]) {
+		case '=':
+		case '!':
+			name += text[offset];
+			forward();
+			if (text[offset] != '=')
+				error("语法错误", Position(row, col));
+			name += text[offset];
+			break;
+		case '<':
+		case '>':
+			name += text[offset];
+			if(text[offset + 1] == '=') {
+				forward();
+				name += text[offset];
+			}
+	}
+	return !name.empty();
 }
 
 Token Lexer::next_token() {
@@ -121,6 +118,9 @@ Token Lexer::next_token() {
 	if (get_num(name, isint))
 		return isint ?
 				Token(kInt, name, row, col) : Token(kReal, name, row, col);
+
+	if (get_cmp(name))
+		return Token(KCmp, name, row, col);
 
 	if (text[offset] == ':')
 		return Token(kString, name, row, col);
