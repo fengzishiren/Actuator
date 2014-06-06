@@ -7,8 +7,28 @@
 //============================================================================
 
 #include <iostream>
+#include <fstream>
 
-int main() {
-	std::cout << "End!" << std::endl; // prints !!!Hello World!!!
-	return 0;
+#include "actuator.h"
+
+std::string& get_code(const std::string& file, std::string& code) {
+	std::ifstream is(file.c_str());
+	std::string s;
+	while (std::getline(is, s)) {
+		code = code.append(s) + '\n'; //注意： 各平台的换行符不能统一 在读取的时候统一用'\n'替换
+	}
+	return code;
 }
+
+int main(int argc, char **argv) {
+	std::string text;
+
+	Script::Actuator actuator;
+	Script::Env env;
+
+	actuator.load(get_code("README.md", text));
+	actuator.run(env);
+
+	std::cout << "End!" << std::endl; // prints !!!Hello World!!!
+}
+
