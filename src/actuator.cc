@@ -46,13 +46,21 @@ void Actuator::load(const std::string& script_code) {
 	Instruction inst;
 	while (!lexer.finish()) {
 		tokens.clear();
-		size_t expect = lexer.col;
-		do {
-			tokens.push_back(lexer.next_token());
-		} while (!lexer.finish() && expect == lexer.col);
 
-		if (tokens.empty() || tokens[0].type != kName) {
-			error("语法错误", tokens[0].pos);
+		Log::info("新的一行");
+		for (; !lexer.finish();) {
+			size_t expect = lexer.row;
+			Token tok = lexer.next_token();
+			Log::info(tok.to_str());
+			if (expect == lexer.row || lexer.finish())
+				break;
+			tokens.push_back(tok);
+		}
+
+		if (tokens.empty())
+			continue;
+		if (tokens[0].type != kName) {
+			error("语法错误load", tokens[0].pos);
 		}
 
 		inst.name = tokens[0].token;
@@ -70,10 +78,13 @@ void Actuator::load(const std::string& script_code) {
 				case kReal:
 				case kString:
 				case kName:
+				case KCmp:
 					inst.params.push_back(tokens[i]);
 					break;
 				default:
-					error("参数不符合要求！", tokens[0].pos);
+					Log::error("%zu", i);
+					Log::error(tokens[i].to_str());
+					error("参数不符合要求！", tokens[i].pos);
 				}
 			}
 		}
@@ -86,6 +97,7 @@ void Actuator::load(const std::string& script_code) {
 			insts.push_back(inst);
 
 	}
+	Log::info("加载完毕！");
 }
 /*
  * 如果是变量 存在则直接取出 否则报错 ？不太妥当

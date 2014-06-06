@@ -24,7 +24,7 @@ L:
 SUC:
   print "OK!"
 FAIL:
-  print Number "不是质数。"
+  print num "不是质数。"
   
 ### 语言设计
 

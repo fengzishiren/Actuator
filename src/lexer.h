@@ -30,7 +30,7 @@ public:
 			return std::string();
 		std::stringstream ss;
 		//Note: 从0开始
-		ss << "[" << x + 1 << ", " << y + 1 << "]" << std::endl;
+		ss << "[" << x + 1 << ", " << y + 1 << "]";
 		return ss.str();
 	}
 };
@@ -44,11 +44,18 @@ public:
 	Token(TokenType _type, std::string _token, size_t row, size_t col) :
 			type(_type), token(_token), pos(row, col) {
 	}
+
+	std::string to_str() const {
+		std::stringstream ss;
+		ss << "TokenType: " << type << "\t" << "Token: " << token << "\t"
+				<< " Pos: " << pos.to_str();
+		return ss.str();
+	}
 };
 
 class Lexer {
 public:
-	std::string text;
+	const std::string& text;
 	size_t offset, col, row;
 
 	Lexer(const std::string& _text) :

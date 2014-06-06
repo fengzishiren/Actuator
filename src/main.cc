@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "actuator.h"
+#include "alarm.h"
 
 std::string& get_code(const std::string& file, std::string& code) {
 	std::ifstream is(file.c_str());
@@ -23,12 +24,13 @@ std::string& get_code(const std::string& file, std::string& code) {
 int main(int argc, char **argv) {
 	std::string text;
 
+	Script::Log::debug("-------------");
 	Script::Actuator actuator;
 	Script::Env env;
 
-	actuator.load(get_code("README.md", text));
+	actuator.load(get_code("sample.se", text));
 	actuator.run(env);
 
-	std::cout << "End!" << std::endl; // prints !!!Hello World!!!
+	std::cout << "End!" << std::endl;
 }
 
