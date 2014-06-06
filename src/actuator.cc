@@ -182,7 +182,7 @@ bool is_zero(const std::string& vfloat) {
 }
 
 std::string eval(const std::string& cmd, const std::string& arg1,
-		const std::string& arg2) {
+		const std::string& arg2, const Position& pos) {
 
 #define EVAL(RES, X, Y, OP)                          \
 	do {                                             \
@@ -202,7 +202,7 @@ std::string eval(const std::string& cmd, const std::string& arg1,
 		EVAL(ss, arg1, arg2, *);
 	} else if (cmd == "div") { // /
 		if (is_zero(arg2)) {
-			error("除数不能为0！");
+			error("除数不能为0！", pos);
 		}
 		EVAL(ss, arg1, arg2, /);
 	}
@@ -259,7 +259,7 @@ void Actuator::run(Env& env) {
 				//把param1和param2求值 把结果放入param0为key结果为value的环境map中
 				std::string arg1 = get_val_or_var(env, pc.params[1]);
 				std::string arg2 = get_val_or_var(env, pc.params[2]);
-				env.put(pc.params[0].token, eval(pc.name, arg1, arg2));
+				env.put(pc.params[0].token, eval(pc.name, arg1, arg2, pc.params[2].pos));
 			} else {
 				error(pc.name + "命令需要一个变量和两个参数", pc.pos);
 			}
