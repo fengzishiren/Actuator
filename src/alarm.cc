@@ -17,11 +17,6 @@ void error(const std::string& err, const Position& pos) {
 	std::exit(-1);
 }
 
-void error(const std::string& err) {
-	std::cerr << err << std::endl;
-	std::exit(-1);
-}
-
 #define STD_FORMAT "%s  %-6s  \t- %s\n"
 
 static inline char *cur_time(char *buf) {

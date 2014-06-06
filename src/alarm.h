@@ -13,10 +13,8 @@
 #include "lexer.h"
 
 namespace Script {
+
 void error(const std::string& err, const Position& pos);
-
-void error(const std::string& err);
-
 
 class Log {
 private:
