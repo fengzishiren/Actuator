@@ -11,6 +11,7 @@
 
 #include "actuator.h"
 #include "alarm.h"
+#include "lexer.h"
 
 std::string& get_code(const std::string& file, std::string& code) {
 	std::ifstream is(file.c_str());
@@ -23,14 +24,23 @@ std::string& get_code(const std::string& file, std::string& code) {
 
 int main(int argc, char **argv) {
 	std::string text;
+	Script::Env env;//执行环境
 
-	Script::Log::debug("-------------");
-	Script::Actuator actuator;
-	Script::Env env;
+	Script::Lexer lexer(get_code("sample.se", text));//词法分析器
 
-	actuator.load(get_code("sample.se", text));
-	actuator.run(env);
+	Script::Parser parser(lexer);//解析器
 
-	std::cout << "End!" << std::endl;
+	Script::Actuator actuator(parser);//执行器
+
+	actuator.load();//加载指令
+	actuator.run(env);//执行
+//
+//	Script::Log::debug("Start:");
+//	Script::Actuator actuator;
+//
+//	actuator.load(get_code("sample.se", text));
+//	actuator.run(env);
+
+	Script::Log::debug("End!:");
 }
 
