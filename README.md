@@ -7,9 +7,25 @@
 > * 6.未完待续。。。
 
 
+新语法：
+print "输入个数字"
+read num
+if num < 2 goto FAIL
+if num == 2 goto SUCC
+mov eax 2
 
+L:
+  if num == eax goto SUCCESS
+  mod edx num eax
+  if edx == 0 goto FAIL
+  add eax eax 1
+  goto L
 
-
+SUC:
+  print "OK!"
+FAIL:
+  print Number "不是质数。"
+  
 ### 语言设计
 
 
