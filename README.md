@@ -8,7 +8,8 @@
 
 
 新语法：
-print "输入个数字"
+```
+print "Please input a number:"
 read num
 if num < 2 goto FAIL
 if num == 2 goto SUCC
@@ -24,7 +25,8 @@ L:
 SUC:
   print "OK!"
 FAIL:
-  print num "不是质数。"
+  print num "not zhishu"
+```
   
 ### 语言设计
 
