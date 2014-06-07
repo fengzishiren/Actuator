@@ -19,7 +19,10 @@ namespace Script {
 enum TokenType {
 	kInt, kReal, kString, KCmp, kName, kColon
 };
-
+/*
+ *
+ * 定位到文件的具体位置
+ */
 class Position {
 public:
 	size_t x, y;
@@ -67,10 +70,11 @@ public:
 class Lexer {
 public:
 	const std::string& text;
-	size_t offset, col, row;
+	size_t offset;
+	size_t row, col;//Location:[x, y]
 
 	Lexer(const std::string& _text) :
-			text(_text), offset(0), col(0), row(0) {
+			text(_text), offset(0), row(0), col(0) {
 	}
 	virtual ~Lexer();
 
