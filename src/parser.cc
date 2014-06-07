@@ -13,14 +13,11 @@ namespace Script {
 Parser::Parser(Lexer& _lexer) :
 		lexer(_lexer) {
 }
-
 Parser::~Parser() {
-	// TODO Auto-generated destructor stub
 }
 
 bool Parser::has_next() {
 	return !lexer.finish();
-
 }
 
 Instruction& Parser::next(Instruction& inst) {
@@ -60,19 +57,11 @@ Instruction& Parser::next(Instruction& inst) {
 				inst.params.push_back(tokens[i]);
 				break;
 			default:
-				Log::error("%zu", i);
 				Log::error(tokens[i].to_str());
 				error("参数不符合要求！", tokens[i].pos);
 			}
 		}
 	}
-
-	/*if (inst.type == kLabel) {
-	 std::map<std::string, size_t>::iterator it = labels.find(inst.name);
-	 if (it == labels.end())
-	 labels[inst.name] = insts.size();
-	 } else
-	 insts.push_back(inst);*/
 	return inst;
 }
 
