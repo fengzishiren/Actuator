@@ -23,6 +23,8 @@ std::string& get_code(const std::string& file, std::string& code) {
 }
 
 int main(int argc, char **argv) {
+	Script::Log::debug("Start:");
+
 	std::string text;
 	Script::Env env;//执行环境
 
@@ -34,13 +36,7 @@ int main(int argc, char **argv) {
 
 	actuator.load();//加载指令
 	actuator.run(env);//执行
-//
-//	Script::Log::debug("Start:");
-//	Script::Actuator actuator;
-//
-//	actuator.load(get_code("sample.se", text));
-//	actuator.run(env);
 
-	Script::Log::debug("End!:");
+	Script::Log::debug("End!");
 }
 
