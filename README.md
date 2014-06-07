@@ -10,8 +10,8 @@
 新语法:  
 代码示例1：
 ```python
-print "           Ode to the West Wind"
-print "                         ——Percy·Bysshe·Shelley"
+print "Ode to the West Wind"
+print "——Percy·Bysshe·Shelley"
 print "O wild West Wind, thou breath of Autumn's being,"
 print "Thou, from whose unseen presence the leaves dead"
 print "Are driven, like ghosts from an enchanter fleeing,"
@@ -28,8 +28,8 @@ print "Wild Spirit, which art moving everywhere;"
 print "Destroyer and preserver; hear, oh hear!"
 ```
 执行结果：  
-            Ode to the West Wind  
-                         ——Percy·Bysshe·Shelley  
+Ode to the West Wind  
+——Percy·Bysshe·Shelley  
 O wild West Wind, thou breath of Autumn's being,  
 Thou, from whose unseen presence the leaves dead  
 Are driven, like ghosts from an enchanter fleeing,  
