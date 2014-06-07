@@ -8,7 +8,7 @@
 
 
 新语法:  
-代码示例1：
+print代码示例1：
 ```python
 print "Ode to the West Wind"
 print "——Percy·Bysshe·Shelley"
@@ -44,5 +44,29 @@ Her clarion o'er the dreaming earth, and fill
 With living hues and odours plain and hill:  
 Wild Spirit, which art moving everywhere;  
 Destroyer and preserver; hear, oh hear!  
+
+Echo代码示例2：  
+``` python
+START:
+	print "Entry a string Or (quit)"
+	read val
+	if val == "quit" goto FINISH
+	print num
+	goto START
+FINISH:
+	exit
+```
+执行结果:  
+Entry a string Or (quit)  
+hello,world!  
+hello,world!  
+Entry a string Or (quit)  
+Actuator.............  
+Actuator.............  
+Entry a string Or (quit)  
+bye-bye  
+bye-bye    
+Entry a string Or (quit)  
+quit  
 
 
