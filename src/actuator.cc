@@ -216,7 +216,8 @@ std::string eval(const std::string& cmd, const std::string& arg1,
  * 依次处理指令
  * exit
  * goto
- * set
+ * mov
+ * ...
  *
  *
  *
@@ -224,7 +225,7 @@ std::string eval(const std::string& cmd, const std::string& arg1,
 void Actuator::run(Env& env) {
 	for (size_t idx = 0; idx < insts.size(); /*++idx*/) {
 		Instruction& pc = insts[idx]; //模拟PC寄存器
-		//Log::info(pc.to_str());
+		Log::debug("正在执行的指令： %s", pc.to_str().c_str());
 
 		if (pc.name == "exit") {
 			if (pc.params.empty())
