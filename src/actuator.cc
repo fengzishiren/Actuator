@@ -34,8 +34,8 @@ Actuator::~Actuator() {
 }
 
 void Actuator::load() {
-	Instruction inst;
 	while (parser.has_next()) {
+		Instruction inst;
 		parser.next(inst);
 		if (inst.type == kLabel) {
 			std::map<std::string, size_t>::iterator it = labels.find(inst.name);
@@ -224,7 +224,7 @@ std::string eval(const std::string& cmd, const std::string& arg1,
 void Actuator::run(Env& env) {
 	for (size_t idx = 0; idx < insts.size(); /*++idx*/) {
 		Instruction& pc = insts[idx]; //模拟PC寄存器
-		Log::info(pc.to_str());
+		//Log::info(pc.to_str());
 
 		if (pc.name == "exit") {
 			if (pc.params.empty())
@@ -323,6 +323,8 @@ void Actuator::run(Env& env) {
 				std::cin >> temp;
 				env.put(it->token, temp);
 			}
+		} else {
+			error("无法识别的指令", pc.pos);
 		}
 		idx++;
 	}
