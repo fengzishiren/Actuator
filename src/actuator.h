@@ -29,12 +29,6 @@ public:
 	void put(const std::string& name, const std::string& value);
 
 };
-//
-//class Plugin {
-//public:
-//	virtual void execute(const Instruction& inst, Env& e) = 0;
-//	virtual ~Plugin() {}
-//};
 
 /**
  * 执行引擎
