@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 	std::string text;
 	Script::Env env;//执行环境
 
-	Script::Lexer lexer(get_code("sample.se", text));//词法分析器
+	Script::Lexer lexer(get_code("2.se", text));//词法分析器
 
 	Script::Parser parser(lexer);//解析器
 
