@@ -11,9 +11,6 @@
 #include <string>
 #include <sstream>
 
-#include "lexer.h"
-
-
 namespace Script {
 
 enum TokenType {
