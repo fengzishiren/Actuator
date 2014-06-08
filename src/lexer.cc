@@ -127,7 +127,6 @@ bool Lexer::get_cmp(std::string& name) {
  *
  */
 int Lexer::next_token(Token& token) {
-	int stat = 0;
 	std::string name;
 	bool isint;
 	size_t x = row, y = col;
