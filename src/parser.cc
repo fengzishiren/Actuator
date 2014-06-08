@@ -28,7 +28,7 @@ Instruction& Parser::next(Instruction& inst) {
 		int stat = lexer.next_token(token);
 		if (stat > 0 && tokens.empty()) //跳过一坨空白符
 			continue;
-		if (stat >= 0) //Eof
+		if (stat >= 0) //EOF or NEWLINE
 			break;
 		Log::info(token.to_str());
 		tokens.push_back(token);
