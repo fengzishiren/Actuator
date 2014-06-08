@@ -32,8 +32,8 @@ public:
 	}
 	std::string to_str() {
 		std::stringstream ss;
-		ss << "Instruction：" << name << " type: " << (type != kInstruction) ?
-				"标签" : "指令";
+		ss << "Instruction：" << name << " type: " << ((type != kInstruction) ?
+				"标签" : "指令");
 		for (std::vector<Token>::iterator it = params.begin();
 				it != params.end(); ++it) {
 			ss << "\t" << it->to_str();
