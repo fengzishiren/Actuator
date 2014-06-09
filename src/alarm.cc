@@ -45,20 +45,25 @@ void Log::format(Level lv, const std::string& msg, va_list va) {
 	n = vsnprintf(buffer, length, msg.c_str(), args);
 	va_end(args);
 
-	if (n < 0) {
+	if (n < 0) {//error!
 		delete[] buffer;
 		return; /*ignore error!*/
 	}
 	//一般非大文本不会到此
 	//假设失败 以每次增大一倍的容量再进行测试
 	if (n >= length) {
+		delete[] buffer;
 		for (;;) {
-			length = n + 1;
-			buffer = (char *) realloc(buffer, length);
+			/*
+			The  glibc  implementation  of  the  functions snprintf() and
+			vsnprintf() conforms to the C99 standard, that is, behaves as
+			described  above, since glibc version 2.1.*/
+			length = n + 1; /* glibc 2.1 */
+			buffer = new char[length];
 			va_copy(args, va);
 			n = vsnprintf(buffer, length, msg.c_str(), args);
 			va_end(args);
-			if (n < 0) {
+			if (n < 0) {//error! 
 				delete[] buffer;
 				return; /*ignore error!*/
 			}
