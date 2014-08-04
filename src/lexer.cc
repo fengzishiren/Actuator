@@ -114,15 +114,6 @@ bool Lexer::get_int(std::string& name) {
 bool Lexer::get_cmp(std::string& name) {
 	switch (text[offset]) {
 	case '=':
-		name += text[offset];
-		forward();
-		if (finish())
-			error("语法错误！", Position(row, col));
-		if (text[offset] != '=')
-			error("语法错误get_cmp", Position(row, col));
-		name += text[offset];
-		forward();
-		break;
 	case '!':
 		name += text[offset];
 		forward();
