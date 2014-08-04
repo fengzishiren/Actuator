@@ -52,14 +52,14 @@ void Actuator::load() {
  * 其他直接返回
  *
  */
-std::string get_val_or_var(Env& env, Token& token) {
+std::string get_val(Env& env, Token& token) {
 	if (token.type == kName) { //处理变量
-		if (env.contains(token.token)) {
-			return env.get(token.token);
+		if (env.contains(token.content)) {
+			return env.get(token.content);
 		} else
-			error("变量未定义" + token.token, token.pos); //？不太妥当
+			error("变量未定义" + token.content, token.pos); //？不太妥当
 	}
-	return token.token;
+	return token.content;
 }
 
 bool is_real(const std::string& number) {
@@ -170,7 +170,7 @@ void Actuator::run(Env& env) {
 			if (pc.params.size() == 1 && pc.params[0].type == kName) {
 				//处理指令跳转
 				std::map<std::string, size_t>::iterator it = labels.find(
-						pc.params[0].token);
+						pc.params[0].content);
 				if (it == labels.end()) {
 					error("找不到带跳转位置", pc.pos);
 				} else {
@@ -182,8 +182,8 @@ void Actuator::run(Env& env) {
 			}
 		} else if (pc.name == "mov") {
 			if (pc.params.size() == 2 && pc.params[0].type == kName) {
-				std::string val = get_val_or_var(env, pc.params[1]);
-				env.put(pc.params[0].token, val);
+				std::string val = get_val(env, pc.params[1]);
+				env.put(pc.params[0].content, val);
 			} else {
 				error("set语句必须是一个变量和一个对象参数", pc.pos);
 			}
@@ -192,38 +192,38 @@ void Actuator::run(Env& env) {
 			//add a b 1 => a = b + 1
 			if (pc.params.size() == 3 && pc.params[0].type == kName) {
 				//把param1和param2求值 把结果放入param0为key结果为value的环境map中
-				std::string arg1 = get_val_or_var(env, pc.params[1]);
-				std::string arg2 = get_val_or_var(env, pc.params[2]);
-				env.put(pc.params[0].token, eval(pc.name, arg1, arg2, pc.params[2].pos));
+				std::string arg1 = get_val(env, pc.params[1]);
+				std::string arg2 = get_val(env, pc.params[2]);
+				env.put(pc.params[0].content, eval(pc.name, arg1, arg2, pc.params[2].pos));
 			} else {
 				error(pc.name + "命令需要一个变量和两个参数", pc.pos);
 			}
 		} else if (pc.name == "if") { //if value1 [opcode value2] goto label
 			bool jmp = false;
 			if (pc.params.size() == 5 && pc.params[1].type == KCmp) { //if val goto label
-				std::string left = get_val_or_var(env, pc.params[0]);
-				std::string right = get_val_or_var(env, pc.params[2]);
+				std::string left = get_val(env, pc.params[0]);
+				std::string right = get_val(env, pc.params[2]);
 
-				if (pc.params[1].token == "==") {
+				if (pc.params[1].content == "==") {
 					jmp = left == right;
-				} else if (pc.params[1].token == "!=") {
+				} else if (pc.params[1].content == "!=") {
 					jmp = left != right;
-				} else if (pc.params[1].token == "<") {
+				} else if (pc.params[1].content == "<") {
 					jmp = str2double(left) < str2double(right);
-				} else if (pc.params[1].token == ">") {
+				} else if (pc.params[1].content == ">") {
 					jmp = str2double(left) > str2double(right);
-				} else if (pc.params[1].token == "<=") {
+				} else if (pc.params[1].content == "<=") {
 					jmp = str2double(left) <= str2double(right);
-				} else if (pc.params[1].token == ">=") {
+				} else if (pc.params[1].content == ">=") {
 					jmp = str2double(left) < str2double(right);
 				}
 
 				if (jmp && pc.params[3].type == kName
-						&& pc.params[3].token == "goto"
+						&& pc.params[3].content == "goto"
 						&& pc.params[4].type == kName) {
 					//处理指令跳转
 					std::map<std::string, size_t>::iterator it = labels.find(
-							pc.params[4].token);
+							pc.params[4].content);
 					if (it == labels.end()) {
 						error("找不到带跳转位置", pc.params[4].pos);
 					} else {
@@ -239,12 +239,12 @@ void Actuator::run(Env& env) {
 			for (std::vector<Token>::iterator it = pc.params.begin();
 					it != pc.params.end(); ++it) {
 				if (it->type == kName) {
-					if (env.contains(it->token)) {
-						std::cout << env.get(it->token);
+					if (env.contains(it->content)) {
+						std::cout << env.get(it->content);
 					} else
 						error("变量未定义！", it->pos);
 				} else
-					std::cout << it->token;
+					std::cout << it->content;
 				std::cout << std::endl;
 			}
 		} else if (pc.name == "read") {
@@ -256,7 +256,7 @@ void Actuator::run(Env& env) {
 				}
 				std::string temp;
 				std::cin >> temp;
-				env.put(it->token, temp);
+				env.put(it->content, temp);
 			}
 		} else {
 			error("无法识别的指令", pc.pos);

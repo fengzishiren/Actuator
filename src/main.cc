@@ -9,9 +9,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "actuator.h"
 #include "alarm.h"
-#include "lexer.h"
+#include "engine.h"
 
 std::string& get_code(const std::string& file, std::string& code) {
 	std::ifstream is(file.c_str());
@@ -26,16 +25,16 @@ int main(int argc, char **argv) {
 	Script::Log::debug("Start:");
 
 	std::string text;
-	Script::Env env;//执行环境
+	get_code("2.se", text);
+	Script::Env env; //执行环境
+	env.load(text);
 
-	Script::Lexer lexer(get_code("2.se", text));//词法分析器
-
-	Script::Parser parser(lexer);//解析器
-
-	Script::Actuator actuator(parser);//执行器
-
-	actuator.load();//加载指令
-	actuator.run(env);//执行
+	Script::Engine engine; //执行器
+	try {
+		engine.launch(env); //执行
+	} catch (const char *s) {
+		std::cout << s << std::endl;
+	}
 
 	Script::Log::debug("End!");
 

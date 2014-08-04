@@ -23,11 +23,22 @@ void Lexer::forward() {
 	}
 }
 
-void Lexer::skip_space() {
-
-	while (std::isspace(text[offset])) {
+bool Lexer::skip_space() {
+	size_t old = offset;
+	while (offset != text.size() && std::isspace(text[offset])) {
 		forward();
 	}
+	return offset != old;
+
+}
+
+bool Lexer::skip_comment() {
+	size_t old = offset;
+	if (text[offset] == ';')
+		do {
+			forward();
+		} while (offset != text.size() && text[offset] != '\n');
+	return offset != old;
 }
 
 bool Lexer::get_name(std::string& name) {
@@ -49,19 +60,27 @@ bool Lexer::get_name(std::string& name) {
 	return found;
 }
 bool Lexer::get_string(std::string& name) {
-	bool found = false;
-	if (text[offset] == '\"') {
-		found = true;
-		forward(); //skip '\"'
-		do {
+
+	if (text[offset] == '-') {// for args
+		name += text[offset];
+		forward();
+		while (!finish() && !std::isspace(text[offset])) {
 			name += text[offset];
 			forward();
-		} while (!finish() && text[offset] != '\"');
-		if (!finish()) {
-			forward(); //skip '\"'
 		}
+		if (finish())
+			error("语法错误！", Position(row, col));
+	} else if (text[offset] == '\"') {
+		forward(); //skip '\"'
+		while (!finish() && text[offset] != '\"') {
+			name += text[offset];
+			forward();
+		}
+		if (finish())
+			error("字符串缺少\"", Position(row, col));
+		forward(); //skip '\"'
 	}
-	return found;
+	return !name.empty();
 }
 
 bool Lexer::get_num(std::string& name, bool& is_int) {
@@ -97,6 +116,8 @@ bool Lexer::get_cmp(std::string& name) {
 	case '=':
 		name += text[offset];
 		forward();
+		if (finish())
+			error("语法错误！", Position(row, col));
 		if (text[offset] != '=')
 			error("语法错误get_cmp", Position(row, col));
 		name += text[offset];
@@ -105,6 +126,8 @@ bool Lexer::get_cmp(std::string& name) {
 	case '!':
 		name += text[offset];
 		forward();
+		if (finish())
+			error("语法错误！", Position(row, col));
 		if (text[offset] != '=')
 			error("语法错误get_cmp", Position(row, col));
 		name += text[offset];
@@ -114,6 +137,8 @@ bool Lexer::get_cmp(std::string& name) {
 	case '>':
 		name += text[offset];
 		forward();
+		if (finish())
+			error("语法错误！", Position(row, col));
 		if (text[offset] == '=') {
 			name += text[offset];
 			forward();
@@ -133,6 +158,9 @@ int Lexer::next_token(Token& token) {
 	size_t x = row;
 	skip_space(); //跳过所有的无效字符 空白换行等。。。
 
+	while (skip_space() || skip_comment()) {
+		;
+	}
 	if (finish())
 		return 0;
 	else if (row != x) {
@@ -141,17 +169,17 @@ int Lexer::next_token(Token& token) {
 	token.pos.x = row;
 	token.pos.y = col;
 
-	if (get_name(token.token))
+	if (get_name(token.content))
 		token.type = kName;
-	else if (get_string(token.token))
+	else if (get_string(token.content))
 		token.type = kString;
-	else if (get_num(token.token, isint))
+	else if (get_num(token.content, isint))
 		token.type = isint ? kInt : kReal;
-	else if (get_cmp(token.token))
+	else if (get_cmp(token.content))
 		token.type = KCmp;
 	else if (text[offset] == ':') {
 		forward();
-		token.token += ':';
+		token.content += ':';
 		token.type = kColon;
 	} else
 		error("语法错误next_token", token.pos);

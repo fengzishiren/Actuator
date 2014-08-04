@@ -25,7 +25,7 @@ Instruction& Parser::next(Instruction& inst) {
 	Log::info("新的一行");
 	Token token;
 	for (;;) {
-		token.token = ""; //clear
+		token.content = ""; //clear
 		int stat = lexer.next_token(token);
 		if (stat > 0 && tokens.empty()) //跳过一坨空白符
 			continue;
@@ -39,7 +39,7 @@ Instruction& Parser::next(Instruction& inst) {
 		error("语法错误load", tokens[0].pos);
 	}
 
-	inst.name = tokens[0].token;
+	inst.name = tokens[0].content;
 	inst.pos = tokens[0].pos;
 
 	if (tokens.size() == 1) {

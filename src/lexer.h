@@ -42,7 +42,7 @@ public:
 class Token {
 public:
 	TokenType type;
-	std::string token;
+	std::string content;
 	Position pos;
 
 	Token() :
@@ -53,7 +53,7 @@ public:
 		std::stringstream ss;
 		static const char *typeinfo[] = { "kInt", "kReal", "kString", "KCmp",
 				"kName", "kColon" };
-		ss << "TokenType: " << typeinfo[type] << "\t" << "Token: " << token
+		ss << "TokenType: " << typeinfo[type] << "\t" << "Token: " << content
 				<< "\t" << " Pos: " << pos.to_str();
 		return ss.str();
 	}
@@ -79,7 +79,9 @@ public:
 	bool get_num(std::string& name, bool& is_int);
 	bool get_int(std::string& name);
 	bool get_cmp(std::string& name);
-	void skip_space();
+	bool skip_space();
+	bool skip_comment();
+
 	void forward();
 	int next_token(Token& token);
 };
