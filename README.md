@@ -51,7 +51,7 @@ START:
 	print "Entry a string Or (quit)"
 	read val
 	if val == "quit" goto FINISH
-	print num
+	print val
 	goto START
 FINISH:
 	exit
