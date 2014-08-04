@@ -1,5 +1,5 @@
 START:
-	say "Entry a string(Or quit)"
+	say "Entry a string(Or quit)" ;print string
 	read val
 	if val == "quit" goto FINISH
 	say val
