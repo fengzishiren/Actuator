@@ -26,7 +26,7 @@ public:
 	Position pos;
 
 	Instruction() :
-			type(kInstruction), pos(-1, -1) {
+			type(kInstruction) {
 	}
 	virtual ~Instruction() {
 	}

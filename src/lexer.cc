@@ -7,6 +7,8 @@
 #include "lexer.h"
 #include "alarm.h"
 
+#include <cctype>
+
 namespace Script {
 
 Lexer::~Lexer() {
@@ -22,7 +24,8 @@ void Lexer::forward() {
 }
 
 void Lexer::skip_space() {
-	while (text[offset] == ' ' || text[offset] == '\t' || text[offset] == '\n') {
+
+	while (std::isspace(text[offset])) {
 		forward();
 	}
 }
@@ -111,51 +114,49 @@ bool Lexer::get_cmp(std::string& name) {
 	case '>':
 		name += text[offset];
 		forward();
-		if (text[offset + 1] == '=') {
-			forward();
+		if (text[offset] == '=') {
 			name += text[offset];
+			forward();
 		}
-		forward();
 	}
-
 	return !name.empty();
 }
 
 /*
  * return =0 finish
  * 		  >0 newLine 具体的数值代表遇到几个换行符
+ * 		  -1 ok
  *
  */
 int Lexer::next_token(Token& token) {
-	std::string name;
 	bool isint;
-	size_t x = row, y = col;
-	skip_space();//跳过所有的无效字符 空白换行等。。。
+	size_t x = row;
+	skip_space(); //跳过所有的无效字符 空白换行等。。。
 
 	if (finish())
 		return 0;
 	else if (row != x) {
 		return row - x;
 	}
+	token.pos.x = row;
+	token.pos.y = col;
 
-	if (get_name(name))
-		token.init(kName, name, x, y);
-
-	else if (get_string(name))
-		token.init(kString, name, x, y);
-
-	else if (get_num(name, isint))
-		token.init(isint ? kInt : kReal, name, x, y);
-
-	else if (get_cmp(name))
-		token.init(KCmp, name, x, y);
-
+	if (get_name(token.token))
+		token.type = kName;
+	else if (get_string(token.token))
+		token.type = kString;
+	else if (get_num(token.token, isint))
+		token.type = isint ? kInt : kReal;
+	else if (get_cmp(token.token))
+		token.type = KCmp;
 	else if (text[offset] == ':') {
 		forward();
-		token.init(kColon, name += ':', x, y);
+		token.token += ':';
+		token.type = kColon;
 	} else
-		error("语法错误next_token", Position(x, y));
-	return -1; //理论不可达
+		error("语法错误next_token", token.pos);
+
+	return -1;
 }
 
 } /* namespace Script */

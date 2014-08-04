@@ -23,10 +23,12 @@ enum TokenType {
 class Position {
 public:
 	size_t x, y;
+	Position() :
+			x(-1), y(-1) {
+	}
 	Position(size_t _x, size_t _y) :
 			x(_x), y(_y) {
 	}
-
 	std::string to_str() const {
 		if (x < 0 || y < 0)
 			return std::string();
@@ -44,14 +46,7 @@ public:
 	Position pos;
 
 	Token() :
-			type(kInt), pos(-1, -1) {
-	}
-
-	void init(TokenType _type, const std::string& _token, size_t row,
-			size_t col) {
-		type = _type;
-		token = _token;
-		pos = Position(row, col);
+			type(kInt) {
 	}
 
 	std::string to_str() const {
@@ -68,7 +63,7 @@ class Lexer {
 public:
 	const std::string& text;
 	size_t offset;
-	size_t row, col;//Location:[x, y]
+	size_t row, col; //Location:[x, y]
 
 	Lexer(const std::string& _text) :
 			text(_text), offset(0), row(0), col(0) {

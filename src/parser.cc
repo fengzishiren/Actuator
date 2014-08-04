@@ -25,6 +25,7 @@ Instruction& Parser::next(Instruction& inst) {
 	Log::info("新的一行");
 	Token token;
 	for (;;) {
+		token.token = ""; //clear
 		int stat = lexer.next_token(token);
 		if (stat > 0 && tokens.empty()) //跳过一坨空白符
 			continue;

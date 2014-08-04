@@ -38,5 +38,6 @@ int main(int argc, char **argv) {
 	actuator.run(env);//执行
 
 	Script::Log::debug("End!");
+
 }
 
