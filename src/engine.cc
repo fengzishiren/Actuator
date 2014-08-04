@@ -26,8 +26,8 @@ long long str2int(const std::string& val) {
 }
 std::string get_val(Env& env, Token& token) {
 	if (token.type == kName) { //处理变量
-		assert(env.existVar(token.content), "变量未定义!", token.pos);
-		return env.getVar(token.content);
+		assert(env.exist_var(token.content), "变量未定义!", token.pos);
+		return env.get_var(token.content);
 	}
 	return token.content;
 }
@@ -46,9 +46,9 @@ struct Commands {
 		assert(pc.params.size() == 1 && pc.params[0].type == kName, "语法错误",
 				pc.pos);
 		Log::debug(pc.params[0].content);
-		int ret = env.getGotoIdx(pc.params[0].content);
+		int ret = env.get_goto_Idx(pc.params[0].content);
 		assert(ret != -1, "找不到跳转位置!", pc.pos);
-		env.setIdx((size_t) ret);
+		env.set_idx((size_t) ret);
 	}
 
 	static void say_cmd(Env& env, Instruction& pc) {
@@ -56,8 +56,8 @@ struct Commands {
 		for (std::vector<Token>::iterator it = pc.params.begin();
 				it != pc.params.end(); ++it) {
 			if (it->type == kName) {
-				assert(env.existVar(it->content), "变量未定义!", it->pos);
-				std::cout << env.getVar(it->content) << ' '; //sep by ' '
+				assert(env.exist_var(it->content), "变量未定义!", it->pos);
+				std::cout << env.get_var(it->content) << ' '; //sep by ' '
 			} else
 				std::cout << it->content;
 		}
@@ -69,7 +69,7 @@ struct Commands {
 				pc.pos);
 		std::string temp;
 		std::cin >> temp;
-		env.setVar(pc.params[0].content, temp);
+		env.set_var(pc.params[0].content, temp);
 	}
 
 	static void if_cmd(Env& env, Instruction& pc) {
@@ -123,13 +123,13 @@ struct Commands {
 	}
 };
 
-bool Env::existVar(const std::string& name) {
+bool Env::exist_var(const std::string& name) {
 	return vars.find(name) != vars.end();
 }
-std::string Env::getVar(const std::string& name) {
+std::string Env::get_var(const std::string& name) {
 	return vars.find(name)->second;
 }
-void Env::setVar(const std::string& name, const std::string& value) {
+void Env::set_var(const std::string& name, const std::string& value) {
 	vars[name] = value;
 }
 
@@ -162,9 +162,9 @@ Engine::Engine() {
 
 void Engine::launch(Env& env) {
 	while (!env.finish()) {
-		Instruction& pc = env.nextInst();
+		Instruction& pc = env.next_inst();
 		Log::debug("当前执行指令：%s", pc.to_str().c_str());
-		how handle = getCmd(pc.name);
+		how handle = get_cmd(pc.name);
 		if (handle == NULL) {
 			Log::error("无法识别的命令“%s”", pc.name.c_str());
 			error("无法识别的命令！", pc.pos);

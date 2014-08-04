@@ -27,15 +27,15 @@ public:
 	Env() :
 			idx(0) {
 	}
-	bool existVar(const std::string& name);
-	std::string getVar(const std::string& name);
-	void setVar(const std::string& name, const std::string& value);
+	bool exist_var(const std::string& name);
+	std::string get_var(const std::string& name);
+	void set_var(const std::string& name, const std::string& value);
 
-	int getGotoIdx(const std::string& label) {
+	int get_goto_Idx(const std::string& label) {
 		std::map<std::string, size_t>::iterator it = labels.find(label);
 		return it == labels.end() ? -1 : it->second;
 	}
-	void setIdx(size_t _idx) {
+	void set_idx(size_t _idx) {
 		idx = _idx;
 	}
 
@@ -43,7 +43,7 @@ public:
 		return idx == insts.size();
 	}
 
-	Instruction& nextInst() {
+	Instruction& next_inst() {
 		return insts[idx++];
 	}
 
@@ -60,7 +60,7 @@ public:
 
 	void launch(Env& env);
 
-	how getCmd(const std::string& name) {
+	how get_cmd(const std::string& name) {
 		std::map<std::string, how>::iterator it = cmds.find(name);
 		return it == cmds.end() ? NULL : it->second;
 	}
