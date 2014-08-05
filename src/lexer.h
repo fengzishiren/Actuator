@@ -14,10 +14,6 @@
 
 namespace Script {
 
-#define OK 1
-#define LF 2
-#define END 3
-
 enum TokenType {
 	kInt, kReal, kString, KCmp, kName, kColon, kLF, kEnd
 };

@@ -46,19 +46,15 @@ bool Lexer::skip_comment() {
 
 bool Lexer::get_name(std::string& name) {
 	bool found = false;
-	if (('a' <= text[offset] && text[offset] <= 'z')
-			|| ('A' <= text[offset] && text[offset] <= 'Z')
-			|| text[offset] == '_') {
+	// letter or '_' 开头
+	if (isalpha(text[offset]) || text[offset] == '_') {
 		found = true;
 		do {
 			name += text[offset];
 			forward();
 		} while (!finish()
-				&& (('a' <= text[offset] && text[offset] <= 'z')
-						|| ('A' <= text[offset] && text[offset] <= 'Z')
-						|| text[offset] == '_'
-						|| ('0' <= text[offset] && text[offset] <= '9')));
-
+				&& (isalnum(text[offset]) || text[offset] == '_'
+						|| text[offset] == '-'));
 	}
 	return found;
 }
@@ -150,9 +146,6 @@ bool Lexer::get_cmp(std::string& name) {
 	return !name.empty();
 }
 /*
- * return =0 finish
- * 		  >0 newLine 具体的数值代表遇到几个换行符
- * 		  -1 ok
  *
  */
 Token& Lexer::next_token(Token& token) {
@@ -179,7 +172,7 @@ Token& Lexer::next_token(Token& token) {
 		token.content += ':';
 		token.type = kColon;
 	} else
-		error("语法错误next_token", token.pos);
+		error("无法识别的字符！", token.pos);
 
 	return token;
 }

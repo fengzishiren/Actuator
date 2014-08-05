@@ -53,15 +53,15 @@ public:
 
 class Engine {
 private:
-	typedef void (*how)(Env&, Instruction&);
-	std::map<std::string, how> cmds;
+	typedef void (*func)(Env&, Instruction&);
+	std::map<std::string, func> cmds;
 public:
 	Engine();
 
 	void launch(Env& env);
 
-	how get_cmd(const std::string& name) {
-		std::map<std::string, how>::iterator it = cmds.find(name);
+	func get_cmd(const std::string& name) {
+		std::map<std::string, func>::iterator it = cmds.find(name);
 		return it == cmds.end() ? NULL : it->second;
 	}
 

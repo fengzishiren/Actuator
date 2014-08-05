@@ -15,7 +15,7 @@ static void assert(bool cond, const std::string& msg, const Position& pos) {
 		error(msg, pos);
 }
 
-long long str2int(const std::string& val) {
+static long long str2int(const std::string& val) {
 	//char *err = NULL;
 	//long long retval = std::strtoll(val.c_str(), &err, 10);
 	//if (*err == '\0')
@@ -24,13 +24,15 @@ long long str2int(const std::string& val) {
 	//忽略错误
 	return std::strtoll(val.c_str(), NULL, 10);
 }
-std::string get_val(Env& env, Token& token) {
+
+static std::string get_val(Env& env, Token& token) {
 	if (token.type == kName) { //处理变量
 		assert(env.exist_var(token.content), "变量未定义!", token.pos);
 		return env.get_var(token.content);
 	}
 	return token.content;
 }
+
 struct Commands {
 
 	static void exit_cmd(Env& env, Instruction& pc) {
@@ -75,45 +77,44 @@ struct Commands {
 	static void if_cmd(Env& env, Instruction& pc) {
 		//if value1 [opcode value2] goto label
 		bool jmp = false;
-		if (pc.params.size() == 5 && pc.params[1].type == KCmp) { //if val goto label
-			std::string left = get_val(env, pc.params[0]);
-			std::string right = get_val(env, pc.params[2]);
+		assert(pc.params.size() == 5 && pc.params[1].type == KCmp, "goto语法错误!",
+				pc.pos); //if val goto label
+		std::string left = get_val(env, pc.params[0]);
+		std::string right = get_val(env, pc.params[2]);
 
-			if (pc.params[1].content == "==") {
-				jmp = left == right;
-			} else if (pc.params[1].content == "!=") {
-				jmp = left != right;
-			} else if (pc.params[1].content == "<") {
-				jmp = str2int(left) < str2int(right);
-			} else if (pc.params[1].content == ">") {
-				jmp = str2int(left) > str2int(right);
-			} else if (pc.params[1].content == "<=") {
-				jmp = str2int(left) <= str2int(right);
-			} else if (pc.params[1].content == ">=") {
-				jmp = str2int(left) < str2int(right);
-			}
+		if (pc.params[1].content == "==") {
+			jmp = left == right;
+		} else if (pc.params[1].content == "!=") {
+			jmp = left != right;
+		} else if (pc.params[1].content == "<") {
+			jmp = str2int(left) < str2int(right);
+		} else if (pc.params[1].content == ">") {
+			jmp = str2int(left) > str2int(right);
+		} else if (pc.params[1].content == "<=") {
+			jmp = str2int(left) <= str2int(right);
+		} else if (pc.params[1].content == ">=") {
+			jmp = str2int(left) < str2int(right);
+		}
 
-			if (jmp && pc.params[3].type == kName
-					&& pc.params[3].content == "goto"
-					&& pc.params[4].type == kName) {
-				Token copy = pc.params[4];
-				pc.pos = pc.params[3].pos;
-				pc.params.clear();
-				pc.params.push_back(copy);
-				goto_cmd(env, pc);
-			} else if (jmp) {
-				error("goto语句后面必须带有一个跳转Label", pc.params[4].pos);
-			}
+		if (jmp && pc.params[3].type == kName && pc.params[3].content == "goto"
+				&& pc.params[4].type == kName) {
+			Token copy = pc.params[4];
+			pc.pos = pc.params[3].pos;
+			pc.params.clear();
+			pc.params.push_back(copy);
+			goto_cmd(env, pc);
+		} else if (jmp) {
+			error("goto语句后面必须带有一个跳转Label", pc.params[4].pos);
 		}
 	}
 
 	static void shell_cmd(Env& env, Instruction& pc) {
 		assert(pc.params.size() > 0, "语法错误!", pc.pos);
-		Log::debug("shello");
 		std::string command;
 		std::vector<Token>::iterator it = pc.params.begin();
 		for (; it != pc.params.end(); it++) {
-			command.append(it->content);
+			Log::debug("val name: %s",it->content.c_str());
+			command.append(get_val(env, *it));
 			command.append(" ");
 		}
 		command = command.substr(0, command.size() - 1);
@@ -152,12 +153,12 @@ void Engine::launch(Env& env) {
 	while (!env.finish()) {
 		Instruction& pc = env.next_inst();
 		Log::debug("当前执行指令：%s", pc.to_str().c_str());
-		how handle = get_cmd(pc.name);
-		if (handle == NULL) {
+		func f = get_cmd(pc.name);
+		if (f == NULL) {
 			Log::error("无法识别的命令“%s”", pc.name.c_str());
 			error("无法识别的命令！", pc.pos);
 		}
-		handle(env, pc);
+		f(env, pc);
 	}
 }
 }

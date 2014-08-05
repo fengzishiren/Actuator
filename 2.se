@@ -1,9 +1,9 @@
 START:
-	say "Entry a string(Or quit)" ;print string
+	say "Entry a string(Or quit)"
 	read val
 	if val == "quit" goto FINISH
 	say val
-	shell ls -a -l
+	shell val
 	if 10 == 10 goto FINISH
 	goto START
 FINISH:
