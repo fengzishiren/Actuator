@@ -144,6 +144,7 @@ Engine::Engine() {
 	cmds["exit"] = Commands::exit_cmd;
 	cmds["goto"] = Commands::goto_cmd;
 	cmds["say"] = Commands::say_cmd;
+	cmds["print"] = Commands::say_cmd;
 	cmds["read"] = Commands::read_cmd;
 	cmds["if"] = Commands::if_cmd;
 	cmds["shell"] = Commands::shell_cmd;
