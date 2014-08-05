@@ -17,10 +17,11 @@ namespace Script {
 void error(const std::string& err, const Position& pos);
 
 class Log {
-private:
+public:
 	enum Level {
 		DEBUG, INFO, WARN, ERROR
 	};
+private:
 	static void format(Level lv, const std::string& msg, va_list va);
 public:
 	static Level level;
