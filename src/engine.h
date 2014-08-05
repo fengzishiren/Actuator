@@ -17,7 +17,7 @@ namespace Script {
 
 class Env {
 private:
-	size_t idx;//指令指针
+	size_t idx; //指令指针
 	//待执行指令集
 	std::vector<Instruction> insts;
 	//指令label索引

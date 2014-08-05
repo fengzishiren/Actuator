@@ -22,10 +22,13 @@ void Lexer::forward() {
 		col++;
 	}
 }
-
+/*
+ * exclude '\n'
+ */
 bool Lexer::skip_space() {
 	size_t old = offset;
-	while (offset != text.size() && std::isspace(text[offset])) {
+	while (offset != text.size() && text[offset] != '\n'
+			&& std::isspace(text[offset])) {
 		forward();
 	}
 	return offset != old;
@@ -61,7 +64,7 @@ bool Lexer::get_name(std::string& name) {
 }
 bool Lexer::get_string(std::string& name) {
 
-	if (text[offset] == '-') {// for args
+	if (text[offset] == '-') { // for args
 		name += text[offset];
 		forward();
 		while (!finish() && !std::isspace(text[offset])) {
@@ -114,6 +117,15 @@ bool Lexer::get_int(std::string& name) {
 bool Lexer::get_cmp(std::string& name) {
 	switch (text[offset]) {
 	case '=':
+		name += text[offset];
+		forward();
+		if (finish())
+			error("语法错误！", Position(row, col));
+		if (text[offset] != '=')
+			error("语法错误get_cmp", Position(row, col));
+		name += text[offset];
+		forward();
+		break;
 	case '!':
 		name += text[offset];
 		forward();
@@ -137,30 +149,24 @@ bool Lexer::get_cmp(std::string& name) {
 	}
 	return !name.empty();
 }
-
 /*
  * return =0 finish
  * 		  >0 newLine 具体的数值代表遇到几个换行符
  * 		  -1 ok
  *
  */
-int Lexer::next_token(Token& token) {
+Token& Lexer::next_token(Token& token) {
 	bool isint;
-	size_t x = row;
-	skip_space(); //跳过所有的无效字符 空白换行等。。。
-
-	while (skip_space() || skip_comment()) {
-		;
-	}
-	if (finish())
-		return 0;
-	else if (row != x) {
-		return row - x;
-	}
 	token.pos.x = row;
 	token.pos.y = col;
-
-	if (get_name(token.content))
+	while (skip_space() || skip_comment())
+		;
+	if (finish()) {
+		token.type = kEnd;
+	} else if (text[offset] == '\n') {
+		token.type = kLF;
+		forward();
+	} else if (get_name(token.content))
 		token.type = kName;
 	else if (get_string(token.content))
 		token.type = kString;
@@ -175,7 +181,7 @@ int Lexer::next_token(Token& token) {
 	} else
 		error("语法错误next_token", token.pos);
 
-	return -1;
+	return token;
 }
 
 } /* namespace Script */

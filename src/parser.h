@@ -9,7 +9,7 @@
 #define PARSER_H_
 
 #include <vector>
-
+#include <map>
 #include "lexer.h"
 
 namespace Script {
@@ -32,8 +32,8 @@ public:
 	}
 	std::string to_str() {
 		std::stringstream ss;
-		ss << "Instruction：" << name << " type: " << ((type != kInstruction) ?
-				"标签" : "指令");
+		ss << "Instruction：" << name << " type: "
+				<< ((type != kInstruction) ? "标签" : "指令");
 		for (std::vector<Token>::iterator it = params.begin();
 				it != params.end(); ++it) {
 			ss << "\t" << it->to_str();
@@ -49,8 +49,8 @@ private:
 public:
 	Parser(Lexer& _lexer);
 	virtual ~Parser();
-	bool has_next();
-	Instruction& next(Instruction& inst);
+	void parse(std::vector<Instruction>& insts,
+			std::map<std::string, size_t>& labels) const;
 };
 
 } /* namespace Script */

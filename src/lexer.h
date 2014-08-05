@@ -10,11 +10,16 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+//#include <cassert>
 
 namespace Script {
 
+#define OK 1
+#define LF 2
+#define END 3
+
 enum TokenType {
-	kInt, kReal, kString, KCmp, kName, kColon
+	kInt, kReal, kString, KCmp, kName, kColon, kLF, kEnd
 };
 /*
  *
@@ -24,14 +29,15 @@ class Position {
 public:
 	size_t x, y;
 	Position() :
-			x(-1), y(-1) {
+			x(0), y(0) {
 	}
 	Position(size_t _x, size_t _y) :
 			x(_x), y(_y) {
 	}
 	std::string to_str() const {
-		if (x < 0 || y < 0)
-			return std::string();
+		//assert(x >= 0 && y >= 0);
+//		if (x < 0 || y < 0)
+//			return std::string();
 		std::stringstream ss;
 		//Note: 从0开始
 		ss << "[" << x + 1 << ", " << y + 1 << "]";
@@ -83,7 +89,7 @@ public:
 	bool skip_comment();
 
 	void forward();
-	int next_token(Token& token);
+	Token& next_token(Token& token);
 };
 
 } /* namespace Script */

@@ -136,19 +136,7 @@ void Env::set_var(const std::string& name, const std::string& value) {
 void Env::load(const std::string& text) {
 	Lexer lexer(text);
 	Parser parser(lexer);
-	while (parser.has_next()) {
-		Instruction inst;
-		parser.next(inst);
-		if (inst.type == kLabel) {
-			std::map<std::string, size_t>::iterator it = labels.find(inst.name);
-			if (it == labels.end()) {
-				Log::debug("label: %s, idx %zu", inst.name.c_str(),
-						insts.size());
-				labels[inst.name] = insts.size();
-			}
-		} else
-			insts.push_back(inst);
-	}
+	parser.parse(insts, labels);
 }
 
 Engine::Engine() {
