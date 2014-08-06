@@ -9,6 +9,7 @@
 #include <ctime>
 
 #include "alarm.h"
+#include "lexer.h"
 
 namespace Script {
 
@@ -45,7 +46,7 @@ void Log::format(Level lv, const std::string& msg, va_list va) {
 	n = vsnprintf(buffer, length, msg.c_str(), args);
 	va_end(args);
 
-	if (n < 0) {//error!
+	if (n < 0) {	//error!
 		delete[] buffer;
 		return; /*ignore error!*/
 	}
@@ -55,15 +56,15 @@ void Log::format(Level lv, const std::string& msg, va_list va) {
 		delete[] buffer;
 		for (;;) {
 			/*
-			The  glibc  implementation  of  the  functions snprintf() and
-			vsnprintf() conforms to the C99 standard, that is, behaves as
-			described  above, since glibc version 2.1.*/
+			 The  glibc  implementation  of  the  functions snprintf() and
+			 vsnprintf() conforms to the C99 standard, that is, behaves as
+			 described  above, since glibc version 2.1.*/
 			length = n + 1; /* glibc 2.1 */
 			buffer = new char[length];
 			va_copy(args, va);
 			n = vsnprintf(buffer, length, msg.c_str(), args);
 			va_end(args);
-			if (n < 0) {//error! 
+			if (n < 0) {	//error!
 				delete[] buffer;
 				return; /*ignore error!*/
 			}

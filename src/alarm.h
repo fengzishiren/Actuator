@@ -10,8 +10,7 @@
 #include <string>
 #include <cstdarg>
 
-#include "lexer.h"
-
+class Position;
 namespace Script {
 
 void error(const std::string& err, const Position& pos);
