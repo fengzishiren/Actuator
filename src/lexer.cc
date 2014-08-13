@@ -32,12 +32,11 @@ bool Lexer::skip_space() {
 		forward();
 	}
 	return offset != old;
-
 }
 
 bool Lexer::skip_comment() {
 	size_t old = offset;
-	if (text[offset] == ';')
+	if (offset != text.size() && text[offset] == ';')
 		do {
 			forward();
 		} while (offset != text.size() && text[offset] != '\n');
@@ -59,7 +58,6 @@ bool Lexer::get_name(std::string& name) {
 	return found;
 }
 bool Lexer::get_string(std::string& name) {
-
 	if (text[offset] == '-') { // for args
 		name += text[offset];
 		forward();
