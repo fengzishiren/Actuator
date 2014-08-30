@@ -112,7 +112,7 @@ static std::string& get_code(const std::string& file, std::string& code) {
 	}
 	std::string s;
 	while (std::getline(is, s)) {
-		code = code.append(s) + '\n'; //注意： 各平台的换行符不能统一 在读取的时候统一用'\n'替换
+		code.append(s) += '\n';//注意： 各平台的换行符不能统一 在读取的时候统一用'\n'替换
 	}
 	return code;
 }
