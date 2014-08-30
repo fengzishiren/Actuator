@@ -118,7 +118,7 @@ static std::string& get_code(const std::string& file, std::string& code) {
 }
 
 int main(int argc, char **argv) {
-	Script::Log::level = Script::Log::DEBUG;
+	Script::Log::level = Script::Log::WARN;
 
 	int i = doargs(argc, argv);
 	argc -= i;
