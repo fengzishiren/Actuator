@@ -2,6 +2,23 @@
 ===
 我之前一直不知道把这个解释器做成什么样子，一个原因是我对linux shell没任何兴趣。但是我觉得这是一个方向，朝着这个方向作，搞不好某一天就取代linux shell了。
 
+
+###build
+
+构建工具在build文件夹中，即pymake, build.mk为构建的配置信息。这是我本人写用以替代古老的make的工具，遗憾的是它在代码量很大的时候工作的很缓慢。
+当然你也可以g++ allfiles即可。
+用法：
+```sh
+lunatic@lunatic:~/devcenter/workspace/Actuator$ ./debug/hello.out -h
+usage: ./debug/hello.out [options] [filenames]
+  -name           read file named name(omit this argument)
+  -d <level>      set the logging level
+  -v              show version information
+  --version       show version information
+  -h              help information
+  --help          help information
+```
+
 **这是一个简单的脚本执行引擎，最终目标：**
 > * 1.精准的报错能力（具体到某一个行的某一列）
 > * 2.简化语法（尽量使用霍夫曼编码使得常用指令尽可能的短）
