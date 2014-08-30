@@ -1,4 +1,8 @@
-say "Please enter shell command:\n"
-read cmd
-shell cmd
-say "bye-bye"
+L1:
+	say "Please enter shell command:" ;;自动换行
+	read shell
+	if shell == "quit" goto L2
+	shell shell ;;也可以：shell "ls -l"
+	goto L1 ;;跳转到L1对应的代码位置
+L2:
+	say "bye-bye"
