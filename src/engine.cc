@@ -70,7 +70,7 @@ struct Commands {
 		assert(pc.params.size() == 1 && pc.params[0].type == kName, "语法错误",
 				pc.pos);
 		std::string temp;
-		std::cin >> temp;
+		std::getline(std::cin, temp);
 		env.set_var(pc.params[0].content, temp);
 	}
 
