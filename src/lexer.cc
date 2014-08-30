@@ -57,17 +57,9 @@ bool Lexer::get_name(std::string& name) {
 	}
 	return found;
 }
+
 bool Lexer::get_string(std::string& name) {
-	if (text[offset] == '-') { // for args
-		name += text[offset];
-		forward();
-		while (!finish() && !std::isspace(text[offset])) {
-			name += text[offset];
-			forward();
-		}
-		if (finish())
-			error("语法错误！", Position(row, col));
-	} else if (text[offset] == '\"') {
+	if (text[offset] == '\"') {
 		forward(); //skip '\"'
 		while (!finish() && text[offset] != '\"') {
 			name += text[offset];
