@@ -17,14 +17,15 @@
 * read 
 * if 
 * shell 
+注意：say和print命令是一样的 都会自动输出字符串并换行，是从Perl6借鉴来的，我本人很喜欢。
 
-这也就意味着你创建一个变量的话劲量不要与以上命令重名，也就是传说中的保留字，但是如果重名了也没什么具体原因可以看代码。
+如果你创建一个变量的话尽量不要与以上命令重名，也就是传说中的保留字，但是如果重名了也没什么，具体原因可以看源代码。
 
 #怎么用？
 示例代码片段（这里面read命令的后面跟的shell是一个变量，我可以让它和sehll命令重名，可以看出它仍然可以正常工作。）：
 ```perl
 L1:
-	say "Please enter shell command:\n"
+	say "Please enter shell command:"
 	read shell
 	if shell == "quit" goto L2
 	shell shell
@@ -35,7 +36,9 @@ L2:
 ```
 这段脚本用到了上面所有的命令，注意L1和L2有点编程经验的人都知道是做什么用的。需要注意的是不要同名否则最后的label会覆盖掉前面同名的label。（完整的文件在example下shell.se中）
 
- 
+
+以下是其他代码示例：
+
 print代码示例1：
 ```python
 print "Ode to the West Wind"
