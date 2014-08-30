@@ -7,7 +7,8 @@
 
 构建工具在build文件夹中，即pymake, build.mk为构建的配置信息。这是我本人写用以替代古老的make的工具，遗憾的是它在代码量很大的时候工作的很缓慢。
 当然你也可以g++ allfiles即可。
-用法：
+
+解释器用法：
 ```sh
 lunatic@lunatic:~/devcenter/workspace/Actuator$ ./debug/hello.out -h
 usage: ./debug/hello.out [options] [filenames]
