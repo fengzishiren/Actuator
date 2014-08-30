@@ -1,0 +1,4 @@
+say "Please enter shell command:\n"
+read cmd
+shell cmd
+say "bye-bye"
