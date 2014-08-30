@@ -18,7 +18,7 @@
 * if 
 * shell 
 
-**命令规则：**
+**命名规则：**
 
 和c语言一样以下划线'_'或字母开头，后接数字字母下划线注意和'-'的组合。关于'-'是从lisp语言借鉴而来的。
 合法的标示符（变量名）：aaa, _, _a, _2, _----, get-set等。
@@ -26,7 +26,7 @@
 **注意事项：**
 
 * say和print命令是一样的 都会自动输出字符串并换行，是从Perl6借鉴来的，我本人很喜欢。
-*
+* lisp注释风格 ';'作用于';'出现的位置到当前行尾
 
 如果你创建一个变量的话尽量不要与以上命令重名，也就是传说中的保留字，但是如果重名了也没什么，具体原因可以看源代码。
 
@@ -35,11 +35,11 @@
 示例代码片段（每一行都是一条指令或命令，第一个单词为指令名称，后面为参数。注意：这里面read命令的后面跟的shell是一个变量，我刻意让它和sehll命令重名，可以看出它仍然可以正常工作。）：
 ```perl
 L1:
-	say "Please enter shell command:"
+	say "Please enter shell command:" ;;自动换行
 	read shell
 	if shell == "quit" goto L2
-	shell shell
-	goto L1
+	shell shell ;;也可以：shell "ls -l" 即：shell后可直接给字符串
+	goto L1 ;;跳转到L1对应的代码位置
 L2:
 	say "bye-bye"
 
