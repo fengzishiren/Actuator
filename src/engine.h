@@ -7,65 +7,99 @@
 
 #ifndef ENV_H_
 #define ENV_H_
+
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <cstddef>
 
 #include "parser.h"
 
+#define EXIT "exit"
+#define GOTO "goto"
+#define CALL "goto"
+#define SAY "say"
+#define SET "set"
+#define PRINT "print"
+#define READ "read"
+#define IF "if"
+#define DECL "def"
+
 namespace Script {
 
-class Env {
-private:
-	size_t idx; //指令指针
-	//待执行指令集
-	std::vector<Instruction> insts;
-	//指令label索引
-	std::map<std::string, size_t> labels;
-	std::map<std::string, std::string> vars;
-public:
-	Env() :
-			idx(0) {
-	}
-	bool exist_var(const std::string& name);
-	std::string get_var(const std::string& name);
-	void set_var(const std::string& name, const std::string& value);
 
-	int get_goto_Idx(const std::string& label) {
-		std::map<std::string, size_t>::iterator it = labels.find(label);
-		return it == labels.end() ? -1 : it->second;
-	}
-	void set_idx(size_t _idx) {
-		idx = _idx;
-	}
+    class Environment {
+        std::unordered_map<std::string, std::string> symbols;
+        Environment *outer;
+    public:
+        Environment() : outer(nullptr) {
+        }
 
-	bool finish() {
-		return idx == insts.size();
-	}
+        Environment(Environment *_outer) : outer(_outer) {
+        }
 
-	Instruction& next_inst() {
-		return insts[idx++];
-	}
+        bool contains(const std::string &name) {
+            auto *syms = this;
+            while (syms and syms->symbols.find(name) == syms->symbols.end()) {
+                syms = this->outer;
+            }
+            return syms != nullptr;
+        }
 
-	void load(const std::string& text);
+        std::string get(const std::string &name) {
+            auto *syms = this;
+            auto pos;
+            while (syms and (pos = syms->symbols.find(name)) == syms->symbols.end()) {
+                syms = this->outer;
+            }
+            return syms == nullptr ? "" : pos->second;
+        }
 
-};
+        void set_var(const std::string &name, const std::string &value) {
+            symbols[name] = value;
+        }
+    };
 
-class Engine {
-private:
-	typedef void (*func)(Env&, Instruction&);
-	std::map<std::string, func> cmds;
-public:
-	Engine();
 
-	void launch(Env& env);
+    class Engine {
+    private:
+        typedef void (*func)(Env &, Instruction &);
 
-	func get_cmd(const std::string& name) {
-		std::map<std::string, func>::iterator it = cmds.find(name);
-		return it == cmds.end() ? NULL : it->second;
-	}
+        size_t idx; //指令指针
+        //待执行指令集
+        std::vector<Instruction> insts;
+        std::unordered_map<std::string, Closure> closures;
+        std::unordered_map<std::string, func> cmds;
 
-};
+        std::vector<Environment *> gc;
+    public:
+        Environment *new_env(Environment *env) {
+            Environment *e = new Environment(*env);
+            gc.push_back(e);
+            return e;
+        }
+
+        Environment *new_env() {
+            return new_env(nullptr);
+        }
+
+        void finalize() {
+            for (auto *e : gc)
+                delete e;
+        }
+
+        Engine();
+
+        void parse(const std::string &text);
+
+        void launch(Environment &env);
+
+        func get_cmd(const std::string &name) {
+            std::map<std::string, func>::iterator it = cmds.find(name);
+            return it == cmds.end() ? NULL : it->second;
+        }
+
+    };
 
 }  // namespace Script
 
