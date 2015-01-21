@@ -15,15 +15,6 @@
 
 #include "parser.h"
 
-#define EXIT "exit"
-#define GOTO "goto"
-#define CALL "goto"
-#define SAY "say"
-#define SET "set"
-#define PRINT "print"
-#define READ "read"
-#define IF "if"
-#define DECL "def"
 
 namespace Script {
 
@@ -31,12 +22,20 @@ namespace Script {
     class Environment {
         std::unordered_map<std::string, std::string> symbols;
         Environment *outer;
+
     public:
+        static std::vector<Environment *> *gc;
+        static const std::unordered_map<std::string, Closure> *closures;
+
         Environment() : outer(nullptr) {
         }
 
         Environment(Environment *_outer) : outer(_outer) {
         }
+
+        static Environment *new_env(Environment &outer);
+
+        static const Closure *find_closure(const std::string &fun_name);
 
         bool contains(const std::string &name) {
             auto *syms = this;
@@ -48,14 +47,16 @@ namespace Script {
 
         std::string get(const std::string &name) {
             auto *syms = this;
-            auto pos;
-            while (syms and (pos = syms->symbols.find(name)) == syms->symbols.end()) {
+            auto pos = syms->symbols.find(name);
+            while (syms && pos == syms->symbols.end()) {
                 syms = this->outer;
+                pos = syms->symbols.find(name);
             }
             return syms == nullptr ? "" : pos->second;
         }
 
-        void set_var(const std::string &name, const std::string &value) {
+
+        void set(const std::string &name, const std::string &value) {
             symbols[name] = value;
         }
     };
@@ -63,42 +64,22 @@ namespace Script {
 
     class Engine {
     private:
-        typedef void (*func)(Env &, Instruction &);
-
         size_t idx; //指令指针
         //待执行指令集
         std::vector<Instruction> insts;
         std::unordered_map<std::string, Closure> closures;
-        std::unordered_map<std::string, func> cmds;
 
         std::vector<Environment *> gc;
+        Environment *env;
     public:
-        Environment *new_env(Environment *env) {
-            Environment *e = new Environment(*env);
-            gc.push_back(e);
-            return e;
-        }
-
-        Environment *new_env() {
-            return new_env(nullptr);
-        }
-
-        void finalize() {
-            for (auto *e : gc)
-                delete e;
-        }
-
         Engine();
+
+        ~Engine();
+
 
         void parse(const std::string &text);
 
-        void launch(Environment &env);
-
-        func get_cmd(const std::string &name) {
-            std::map<std::string, func>::iterator it = cmds.find(name);
-            return it == cmds.end() ? NULL : it->second;
-        }
-
+        int launch();
     };
 
 }  // namespace Script

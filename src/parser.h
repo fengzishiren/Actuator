@@ -12,6 +12,17 @@
 #include <vector>
 #include "lexer.h"
 
+
+#define EXIT 1
+#define GOTO 2
+#define CALL 3
+#define SAY 4
+#define SET 5
+#define READ 6
+#define IF 7
+#define ERR 8
+
+
 namespace Script {
 
     class Closure {
@@ -28,28 +39,22 @@ namespace Script {
         }
     };
 
-    enum InstructionType {
-        kInstruction, kLabel, kFun
-    };
 
     class Instruction {
     public:
-        InstructionType type;
-        std::string name;
+        int opcode;
         std::vector<Token> params;
         Position pos;
 
-        Instruction() :
-                type(kInstruction) {
+        Instruction() {
         }
 
-        virtual ~Instruction() {
+        ~Instruction() {
         }
 
         std::string to_str() {
             std::stringstream ss;
-            ss << "Instruction：" << name << " type: "
-                    << ((type != kInstruction) ? "标签" : "指令");
+            ss << "Instruction：" << opcode;
             for (std::vector<Token>::iterator it = params.begin();
                  it != params.end(); ++it) {
                 ss << "\t" << it->to_str();

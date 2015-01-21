@@ -133,17 +133,17 @@ int main(int argc, char **argv) {
     Script::Log::debug("读入文件：%s ", *argv);
     get_code(*argv, text);
 
-    Script::Env env; //执行环境
-    env.load(text);
-
-    Script::Engine engine; //执行器
-    try {
-        engine.launch(env); //执行
-    } catch (const char *s) {
-        std::cout << s << std::endl;
-    }
-
-    Script::Log::debug("End!");
+//    Script::Env env; //执行环境
+//    env.load(text);
+//
+//    Script::Engine engine; //执行器
+//    try {
+//        engine.launch(env); //执行
+//    } catch (const char *s) {
+//        std::cout << s << std::endl;
+//    }
+//
+//    Script::Log::debug("End!");
 
     return 0;
 }

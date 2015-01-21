@@ -11,8 +11,22 @@
 
 namespace Script {
 
+    static std::unordered_map<std::string, int> inst_table;
+
+    static void init() {
+        inst_table["exit"] = EXIT;
+        inst_table["goto"] = GOTO;
+        inst_table["call"] = CALL;
+        inst_table["say"] = SAY;
+        inst_table["print"] = SAY;
+        inst_table["set"] = SET;
+        inst_table["read"] = READ;
+        inst_table["if"] = IF;
+    }
+
     Parser::Parser(Lexer &_lexer) :
             lexer(_lexer) {
+        init();
     }
 
     Parser::~Parser() {
@@ -63,6 +77,7 @@ namespace Script {
                 expect(tokens.back().type, ')', tokens.front().pos);
             } else if (tokens[0].type == kEnd) {
                 closure.end = insts.size();
+                labels[closure.name] = closure;
             }
             //add syntax rule:
             //a = 10 => set a 10
@@ -70,40 +85,32 @@ namespace Script {
                 tokens[1] = tokens[0];
                 tokens[0].content = "set";
             } else if (tokens.size() >= 3 && tokens[1].type == '(' && tokens.back().type == ')') {
-                inst.name = "call";
-            } else
-                inst.name = tokens[0].content;
+                inst.opcode = inst_table["call"];
+            }
+            const std::string &op = tokens[0].content;
+            inst.opcode = inst_table[op];
             inst.pos = tokens[0].pos;
 
-            if (tokens.size() == 1) {
-                inst.type = kInstruction;
-            } else if (tokens[1].type == ':') {
-                inst.type = kLabel;
-            } else { //处理指令参数
-                inst.type = kInstruction;
-                for (size_t i = 1; i < tokens.size(); ++i) {
-                    switch (tokens[i].type) {
-                        case kInt:
-                        case kReal:
-                        case kString:
-                        case kName:
-                        case KCmp:
-                            inst.params.push_back(tokens[i]);
-                            break;
-                        default:
-                            Log::error(tokens[i].to_str());
-                            error("参数不符合要求！", tokens[i].pos);
-                    }
-                };
-            }
-//            if (inst.type == kLabel) {
-//                std::map<std::string, size_t>::iterator it = labels.find(inst.name);
-//                if (it == labels.end()) {
-//                    Log::debug("label: %s, idx %zu", inst.name.c_str(),
-//                            insts.size());
-//                    labels[inst.name] = insts.size();
-//                }
-//            } else
+//            if (tokens.size() == 1) {
+//                inst.type = kInstruction;
+//            } else if (tokens[1].type == ':') {
+//                inst.type = kLabel;
+//            } else { //处理指令参数
+//                inst.type = kInstruction;
+            for (size_t i = 1; i < tokens.size(); ++i) {
+                switch (tokens[i].type) {
+                    case kInt:
+                    case kReal:
+                    case kString:
+                    case kName:
+                    case KCmp:
+                        inst.params.push_back(tokens[i]);
+                        break;
+                    default:
+                        Log::error(tokens[i].to_str());
+                        error("参数不符合要求！", tokens[i].pos);
+                }
+            };
             insts.push_back(inst);
         }
     }
