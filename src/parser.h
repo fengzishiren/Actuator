@@ -27,7 +27,7 @@ namespace Script {
 
     class Closure {
     public:
-        std::vector<std::string> args;
+        std::vector <std::string> args;
         std::string name;
         size_t start;
         size_t end;
@@ -43,7 +43,7 @@ namespace Script {
     class Instruction {
     public:
         int opcode;
-        std::vector<Token> params;
+        std::vector <Token> params;
         Position pos;
 
         Instruction() {
@@ -67,13 +67,26 @@ namespace Script {
     class Parser {
     private:
         Lexer &lexer;
+        std::vector <Instruction> &insts;
+        std::unordered_map <size_t, std::pair<size_t, size_t>> &labels;
+
+        std::unordered_map <std::string, Closure> &closures;
+
     public:
-        Parser(Lexer &_lexer);
+        Parser(Lexer &_lexer, std::vector <Instruction> &_insts, std::unordered_map <std::string, Closure> &_closures);
 
         virtual ~Parser();
 
-        void parse(std::vector<Instruction> &insts,
-                std::unordered_map<std::string, Closure> &labels) const;
+        std::vector <Token> tokens;
+
+        void def();
+
+        void stmts();
+
+        void move_tokens();
+
+
+        void parse() const;
     };
 
 } /* namespace Script */

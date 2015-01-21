@@ -50,8 +50,8 @@ namespace Script {
         std::string content;
         Position pos;
 
-        Token() :
-                type(kInt) {
+        Token(size_t type) :
+                type(type) {
         }
 
         std::string to_str() const {
