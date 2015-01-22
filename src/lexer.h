@@ -14,7 +14,7 @@
 namespace Script {
 
     enum TokenType {
-        kInt, kReal, kString, KCmp, kAssign, kDef, kName, kLF, kEnd, kEOF
+        kInt, kReal, kString, KCmp, kAssign, kDef, kIf, kName, kLF, kEnd, kEOF
     };
 
 /*
@@ -49,6 +49,9 @@ namespace Script {
         size_t type;
         std::string content;
         Position pos;
+
+        Token() {
+        }
 
         Token(size_t type) :
                 type(type) {

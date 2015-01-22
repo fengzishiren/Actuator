@@ -128,8 +128,10 @@ namespace Script {
 
     void Engine::parse(const std::string &text) {
         Lexer lexer(text);
-        Parser parser(lexer);
-        parser.parse(insts, closures);
+        //TODO
+        std::unordered_map<size_t, size_t> _labels;
+        Parser parser(lexer,insts,_labels, closures);
+        parser.parse();
     }
 
     static void do_say(Env &env, Instruction &pc) {
