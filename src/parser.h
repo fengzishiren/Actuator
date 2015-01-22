@@ -8,9 +8,10 @@
 #ifndef PARSER_H_
 #define PARSER_H_
 
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
 #include "lexer.h"
+#include <cstring>
 
 
 #define EXIT 1
@@ -25,7 +26,8 @@
 #define  GE 10
 #define  GT 11
 #define  LS 12
-#define ERR 13
+#define RET 13
+#define ERR 14
 
 
 namespace Script {
@@ -47,25 +49,125 @@ namespace Script {
     };
 
     enum Type {
-        VAR, STRING, INT, FLOAT
+        kVAR, kSTRING, kINT, kFLOAT
     };
 
-    class Argument {
-    private:
-
-    public:
+    class Value {
         union {
-            std::string s;
+            char *s;
             INT num;
             FLOAT real;
         } val;
-        Type tag;
+    public:
+        Position pos;
+        Type type;
+        static Value NIL;
+
+        Value() : pos(Position::NULL_POS) {
+        }
+
+        Value(const std::string &str, const Position &_pos) : type(kSTRING), pos(_pos) {
+            set_string(str);
+        }
+
+        Value(INT n, const Position &_pos) : type(kINT), pos(_pos) {
+            val.num = n;
+        }
+
+        Value(FLOAT n, const Position &_pos) : type(kFLOAT), pos(_pos) {
+            val.real = n;
+        }
+
+        Value(Type _tag, const Position &_pos) : type(_tag), pos(_pos) {
+        }
+
+        Value(const Position &_pos) : pos(_pos) {
+        }
+
+        ~Value() {
+            if (type == kSTRING)
+                delete val.s;
+        }
+
+        void set_string(const std::string str, Type _tag = kSTRING) {
+            val.s = new char[str.length() + 1];
+            size_t len = str.copy(val.s, str.length(), 0);
+            val.s[len] = '\0';
+            type = _tag;
+        }
+
+        void set_int(INT n) {
+            val.num = n;
+            type = kINT;
+        }
+
+        void set_float(FLOAT real) {
+            val.real = real;
+            type = kFLOAT;
+        }
+
+        bool operator==(const Value &v) const {
+            return equals(v);
+        }
+
+        bool less_equals(const Value &v) const {
+            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+            return type == kINT ? val.num <= v.val.num : val.real <= v.val.real;
+        }
+
+        bool greater_equals(const Value &v) const {
+            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+            return type == kINT ? val.num >= v.val.num : val.real >= v.val.real;
+        }
+
+        bool less(const Value &v) const {
+            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+            return type == kINT ? val.num < v.val.num : val.real < v.val.real;
+        }
+
+        bool greater(const Value &v) const {
+            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+            return type == kINT ? val.num > v.val.num : val.real > v.val.real;
+        }
+
+        bool equals(const Value &v) const {
+            int t = (int) type;
+            switch (t) {
+                case -1:
+                    return v.type == -1;
+                case kVAR:
+                case kSTRING:
+                    return !std::strcmp(val.s, v.val.s);
+                case kINT:
+                    return val.num == v.val.num;
+                case kFLOAT:
+                    return val.real == val.real;
+            }
+        }
+
+        std::string repr() const {
+            std::stringstream ss;
+            switch (type) {
+                case kVAR:
+                case kSTRING:
+                    return std::string(val.s);
+                case kINT:
+                    ss << val.num;
+                    break;
+                case kFLOAT:
+                    ss << val.real;
+                    break;
+                default:
+                    break;
+            }
+            return ss.str();
+        }
     };
 
     class Instruction {
     public:
         int opcode;
-        std::vector<Argument> params;
+        std::vector<Value> params;
         Position pos;
 
         Instruction() {
@@ -103,14 +205,13 @@ namespace Script {
 
         void def();
 
-        void match(TokenType t);
+        void match(Tag t);
 
         void embed_stmts();
 
         void stmts();
 
         void move_tokens();
-
 
         void parse();
     };

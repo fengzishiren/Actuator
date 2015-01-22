@@ -13,8 +13,8 @@
 
 namespace Script {
 
-    enum TokenType {
-        kInt, kReal, kString, kCmp, kAssign, kDef, kName, kLF, kEnd, kEOF
+    enum Tag {
+        kInt, kReal, kString, kRet, kCmp, kAssign, kDef, kName, kLF, kEnd, kEOF
     };
 
 /*
@@ -23,14 +23,21 @@ namespace Script {
  */
     class Position {
     public:
-        size_t x, y;
+        int x, y;
 
         Position() :
-                x(0), y(0) {
+                x(-1), y(-1) {
         }
 
         Position(size_t _x, size_t _y) :
-                x(_x), y(_y) {
+                x((int) _x), y((int) _y) {
+        }
+
+        static Position NULL_POS;
+
+        void set(size_t _x, size_t _y) {
+            x = (int) x;
+            y = (int) y;
         }
 
         std::string to_str() const {
@@ -46,22 +53,22 @@ namespace Script {
 
     class Token {
     public:
-        TokenType type;
+        Tag tag;
         std::string content;
         Position pos;
 
         Token() {
         }
 
-        Token(size_t type) :
-                type(type) {
+        Token(Tag _type) :
+                tag(_type) {
         }
 
         std::string to_str() const {
             std::stringstream ss;
             static const char *typeinfo[] = {"kInt", "kReal", "kString", "KCmp",
                     "kName", "kColon"};
-            ss << "TokenType: " << typeinfo[type] << "\t" << "Token: " << content
+            ss << "Tag: " << typeinfo[tag] << "\t" << "Token: " << content
                     << "\t" << " Pos: " << pos.to_str();
             return ss.str();
         }
@@ -73,9 +80,7 @@ namespace Script {
         size_t offset;
         size_t row, col; //Location:[x, y]
 
-        Lexer(const std::string &_text) :
-                text(_text), offset(0), row(0), col(0) {
-        }
+        Lexer(const std::string &_text);
 
         virtual ~Lexer();
 

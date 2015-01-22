@@ -11,9 +11,9 @@
 #include "alarm.h"
 
 namespace Script {
-
+    Value Value::NIL = Value((Type) -1, Position::NULL_POS);
     static std::unordered_map<std::string, int> inst_table;
-    static std::vector<std::string> cmps = {"==", "!=", "<=", ">=", "<", ">"};
+    static const std::string cmps[] = {"==", "!=", "<=", ">=", "<", ">"};
 
     static void init() {
         inst_table["exit"] = EXIT;
@@ -29,8 +29,8 @@ namespace Script {
         inst_table[">="] = GE;
         inst_table["<"] = GT;
         inst_table[">"] = LS;
-
-
+        inst_table["return"] = RET;
+        inst_table["error"] = ERR;
     }
 
     static bool is_cmp(const std::string &cmp) {
@@ -66,23 +66,20 @@ namespace Script {
         return std::strtold(val.c_str(), NULL);
     }
 
-    static Argument &tok2arg(Token &tok, Argument &arg) {
-        switch (tok.type) {
+    static Value tok2arg(Token &tok) {
+        Value arg(tok.pos);
+        switch (tok.tag) {
             case kName:
-                arg.tag = VAR;
-                arg.val.s = tok.content;
+                arg.set_string(tok.content, kVAR);
                 break;
             case kString:
-                arg.tag = STRING;
-                arg.val.s = tok.content;
+                arg.set_string(tok.content);
                 break;
             case kInt:
-                arg.tag = INT;
-                arg.val.num = str2int(tok.content);
+                arg.set_int(str2int(tok.content));
                 break;
             case kReal:
-                arg.tag = FLOAT;
-                arg.val.real = str2float(tok.content);
+                arg.set_float(str2float(tok.content));
                 break;
         }
         return arg;
@@ -94,17 +91,17 @@ namespace Script {
     void Parser::def() {
         Closure closure;
         closure.start = insts.size();
-        expect(tokens[1].type, kName, tokens[1].pos);
+        expect(tokens[1].tag, kName, tokens[1].pos);
         closure.name = tokens[1].content;
         for (int i = 2; i < tokens.size() - 1; ++i) {
             if (i % 2) {
-                expect(tokens[i].type, (TokenType) ',', tokens[i].pos);
+                expect(tokens[i].tag, (Tag) ',', tokens[i].pos);
             } else {
-                expect(tokens[i].type, kName, tokens[i].pos);
+                expect(tokens[i].tag, kName, tokens[i].pos);
                 closure.args.push_back(tokens[i].content);
             }
         }
-        expect(tokens.back().type, (TokenType) ')', tokens.front().pos);
+        expect(tokens.back().tag, (Tag) ')', tokens.front().pos);
         stmts();
         match(kEnd);
         closures[closure.name] = closure;
@@ -117,14 +114,13 @@ namespace Script {
         inst.pos = tokens[0].pos;
 
         for (size_t i = 1; i < tokens.size(); ++i) {
-            Argument arg;
-            switch (tokens[i].type) {
+            switch (tokens[i].tag) {
                 case kInt:
                 case kReal:
                 case kString:
                 case kName:
                 case kCmp:
-                    inst.params.push_back(tok2arg(tokens[i], arg));
+                    inst.params.push_back(tok2arg(tokens[i]));
                     break;
                 default:
                     Log::error(tokens[i].to_str());
@@ -138,10 +134,10 @@ namespace Script {
         for (; !eof;) {
             Token token;
             lexer.next_token(token);
-            if (token.type == kEnd) {
+            if (token.tag == kEnd) {
                 eof = true;
                 break;
-            } else if (token.type == kLF)
+            } else if (token.tag == kLF)
                 break;
             else
                 tokens.push_back(token);
@@ -154,11 +150,11 @@ namespace Script {
 
     static void sugar(std::vector<Token> &tokens, Instruction &inst) {
         Token &tok = tokens.front();
-        if (tok.type == kName) {
-            if (tokens.size() == 3 && tokens[1].type == kAssign) {
+        if (tok.tag == kName) {
+            if (tokens.size() == 3 && tokens[1].tag == kAssign) {
                 tokens[1] = tokens[0];
                 tokens[0].content = "set";
-            } else if (tokens.size() >= 3 && tokens[1].type == '(' && tokens.back().type == ')') {
+            } else if (tokens.size() >= 3 && tokens[1].tag == '(' && tokens.back().tag == ')') {
                 inst.opcode = inst_table["call"];
             } else if (tok.content == "if" && is_cmp(tokens[2].content)) {
                 // if a == b
@@ -169,9 +165,9 @@ namespace Script {
         }
     }
 
-    void Parser::match(TokenType t) {
+    void Parser::match(Tag t) {
         Token &tok = tokens.front();
-        if (tok.type != t) {
+        if (tok.tag != t) {
             error(format("unexpected %s", tok.content.c_str()), tok.pos);
         }
         move_tokens();
@@ -184,10 +180,11 @@ namespace Script {
             ///tokens
             sugar(tokens, inst);
             Token &tok = tokens.front();
-            switch (tok.type) {
+            switch (tok.tag) {
                 case kCmp: {
                     size_t before = insts.size();
                     build_inst(inst);
+                    assert(inst.params.size() == 2, "if语句语法错误", tok.pos);
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
@@ -196,7 +193,12 @@ namespace Script {
                 }
                 case kName:
                     build_inst(inst);
+                    move_tokens();
                     break;
+                case kRet:
+                    build_inst(inst);
+                    assert(inst.params.size() == 1, "仅支持返回一个值", tok.pos);
+                    move_tokens();
                 case kEnd:
                     continue;
                 case kEOF:
@@ -206,7 +208,7 @@ namespace Script {
             };
             insts.push_back(inst);
 
-        } while ((tokens.front().type != kEnd));
+        } while ((tokens.front().tag != kEnd));
     }
 
     void Parser::stmts() {
@@ -217,13 +219,14 @@ namespace Script {
             ///tokens
             sugar(tokens, inst);
             Token &tok = tokens.front();
-            switch (tok.type) {
+            switch (tok.tag) {
                 case kDef:
                     def();
                     break;
                 case kCmp: {
                     size_t before = insts.size();
                     build_inst(inst);
+                    assert(inst.params.size() == 2, "if语句语法错误", tok.pos);
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
@@ -237,11 +240,11 @@ namespace Script {
                 case kName:
                     build_inst(inst);
                 default:
-
+                    error(format("unexpected %s", tok.content.c_str()), tok.pos);
             };
             insts.push_back(inst);
 
-        } while (tokens.front().type != kEOF);
+        } while (tokens.front().tag != kEOF);
     }
 
 

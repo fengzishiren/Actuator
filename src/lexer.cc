@@ -7,11 +7,31 @@
 #include "lexer.h"
 #include "alarm.h"
 
-#include <cctype>
+#include <unordered_map>
 
 namespace Script {
 
+    static std::unordered_map<std::string, Tag> keywords;
+    Position Position::NULL_POS = Position();
+
+    static void fill() {
+        keywords["def"] = kDef;
+        keywords["end"] = kEnd;
+        keywords["return"] = kRet;
+    }
+
+    static Tag find(const std::string &keyword) {
+        std::unordered_map<std::string, Tag>::iterator it;
+        return (it = keywords.find(keyword)) != keywords.end() ? it->second : kName;
+    }
+
+    Lexer::Lexer(const std::string &_text) :
+            text(_text), offset(0), row(0), col(0) {
+        fill();
+    }
+
     Lexer::~Lexer() {
+
     }
 
     void Lexer::forward() {
@@ -154,30 +174,23 @@ namespace Script {
      */
     Token &Lexer::next_token(Token &token) {
         bool isint;
-        token.pos.x = row;
-        token.pos.y = col;
+        token.pos.set(row, col);
         while (skip_space() || skip_comment());
         if (finish()) {
-            token.type = kEOF;
+            token.tag = kEOF;
         } else if (text[offset] == '\n') {
-            token.type = kLF;
+            token.tag = kLF;
             forward();
-        } else if (get_name(token.content)) {
-            if (token.content == "def")
-                token.type = kDef;
-            else if (token.content == "end")
-                token.type = kEnd;
-            else
-                token.type = kName;
-        }
+        } else if (get_name(token.content))
+            token.tag = find(token.content);
         else if (get_assign(token.content))
-            token.type = kAssign;
+            token.tag = kAssign;
         else if (get_string(token.content))
-            token.type = kString;
+            token.tag = kString;
         else if (get_num(token.content, isint))
-            token.type = isint ? kInt : kReal;
+            token.tag = isint ? kInt : kReal;
         else if (get_cmp(token.content))
-            token.type = kCmp;
+            token.tag = kCmp;
         else {
             char peek = text[offset];
             switch (peek) {
@@ -188,7 +201,7 @@ namespace Script {
                 case '}':
                 case ',':
                     token.content += peek;
-                    token.type = (TokenType) peek;
+                    token.tag = (Tag) peek;
                     forward();
                     break;
                 default:

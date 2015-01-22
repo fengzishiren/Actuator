@@ -8,23 +8,19 @@
 #ifndef ENV_H_
 #define ENV_H_
 
-#include <map>
-#include <unordered_map>
-#include <vector>
-#include <cstddef>
-
 #include "parser.h"
+#include <cstddef>
+#include <unordered_map>
 
 
 namespace Script {
 
 
     class Environment {
-        std::unordered_map<std::string, std::string> symbols;
+        std::unordered_map<std::string, Value> symbols;
         Environment *outer;
 
     public:
-        static std::vector<Environment *> *gc;
         static const std::unordered_map<std::string, Closure> *closures;
 
         Environment() : outer(nullptr) {
@@ -33,7 +29,6 @@ namespace Script {
         Environment(Environment *_outer) : outer(_outer) {
         }
 
-        static Environment *new_env(Environment &outer);
 
         static const Closure *find_closure(const std::string &fun_name);
 
@@ -45,18 +40,18 @@ namespace Script {
             return syms != nullptr;
         }
 
-        std::string get(const std::string &name) {
-            auto *syms = this;
+        const Value &get(const std::string &name) {
+            Environment *syms = this;
             auto pos = syms->symbols.find(name);
-            while (syms && pos == syms->symbols.end()) {
+            while (syms != nullptr && pos == syms->symbols.end()) {
                 syms = this->outer;
                 pos = syms->symbols.find(name);
             }
-            return syms == nullptr ? "" : pos->second;
+            return syms == nullptr ? Value::NIL : pos->second;
         }
 
 
-        void set(const std::string &name, const std::string &value) {
+        void set(const std::string &name, const Value &value) {
             symbols[name] = value;
         }
     };
@@ -68,9 +63,16 @@ namespace Script {
         //待执行指令集
         std::vector<Instruction> insts;
         std::unordered_map<std::string, Closure> closures;
-
+        std::unordered_map<size_t, size_t> labels;
         std::vector<Environment *> gc;
         Environment *env;
+
+        Environment *new_env(Environment &outer) {
+            Environment *e = new Environment(&outer);
+            gc.push_back(e);
+            return e;
+        }
+
     public:
         Engine();
 
@@ -78,6 +80,8 @@ namespace Script {
 
 
         void parse(const std::string &text);
+
+        Value execute(Environment &env, size_t start, size_t end);
 
         int launch();
     };
