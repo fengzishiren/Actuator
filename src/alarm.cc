@@ -19,6 +19,49 @@ namespace Script {
         std::exit(-1);
     }
 
+    std::string format(const char *fmt, ...) {
+        int n;
+        int size = 100;     /* Guess we need no more than 100 bytes */
+        char *p, *np;
+        va_list ap;
+
+        p = new char[size];
+
+        while (1) {
+
+            /* Try to print in the allocated space */
+
+            va_start(ap, fmt);
+            n = vsnprintf(p, size, fmt, ap);
+            va_end(ap);
+
+            /* Check error code
+*/
+            if (n < 0)
+                return std::string();
+
+            /* If that worked, return the string */
+
+            if (n < size) {
+                std::string s(p);
+                delete p;
+                return s;
+            }
+
+            /* Else try again with more space */
+
+            size = n + 1;       /* Precisely what is needed */
+            delete p;
+            p = new char[size];
+        }
+    }
+
+
+    void assert(bool cond, const std::string &msg, const Position &pos) {
+        if (!cond)
+            error(msg, pos);
+    }
+
 
     static inline char *cur_time(char *buf) {
         time_t tt;

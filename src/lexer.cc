@@ -177,7 +177,7 @@ namespace Script {
         else if (get_num(token.content, isint))
             token.type = isint ? kInt : kReal;
         else if (get_cmp(token.content))
-            token.type = KCmp;
+            token.type = kCmp;
         else {
             char peek = text[offset];
             switch (peek) {
@@ -188,7 +188,7 @@ namespace Script {
                 case '}':
                 case ',':
                     token.content += peek;
-                    token.type = (size_t) peek;
+                    token.type = (TokenType) peek;
                     forward();
                     break;
                 default:

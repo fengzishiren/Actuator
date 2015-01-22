@@ -15,6 +15,10 @@ namespace Script {
 
     void error(const std::string &err, const Position &pos);
 
+    std::string format(const char *fmt, ...);
+
+    void assert(bool cond, const std::string &msg, const Position &pos);
+
     class Log {
     public:
         enum Level {

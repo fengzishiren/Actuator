@@ -19,11 +19,18 @@
 #define SAY 4
 #define SET 5
 #define READ 6
-#define IF 7
-#define ERR 8
+#define EQ 7
+#define  NE 8
+#define  LE 9
+#define  GE 10
+#define  GT 11
+#define  LS 12
+#define ERR 13
 
 
 namespace Script {
+    typedef long long INT;
+    typedef long double FLOAT;
 
     class Closure {
     public:
@@ -39,11 +46,26 @@ namespace Script {
         }
     };
 
+    enum Type {
+        VAR, STRING, INT, FLOAT
+    };
+
+    class Argument {
+    private:
+
+    public:
+        union {
+            std::string s;
+            INT num;
+            FLOAT real;
+        } val;
+        Type tag;
+    };
 
     class Instruction {
     public:
         int opcode;
-        std::vector<Token> params;
+        std::vector<Argument> params;
         Position pos;
 
         Instruction() {
@@ -55,10 +77,10 @@ namespace Script {
         std::string to_str() {
             std::stringstream ss;
             ss << "Instruction：" << opcode;
-            for (std::vector<Token>::iterator it = params.begin();
-                 it != params.end(); ++it) {
-                ss << "\t" << it->to_str();
-            }
+//            for (std::vector<Token>::iterator it = params.begin();
+//                 it != params.end(); ++it) {
+//                ss << "\t" << it->to_str();
+//            }
             return ss.str();
         }
 
@@ -80,6 +102,10 @@ namespace Script {
         void build_inst(Instruction &inst);
 
         void def();
+
+        void match(TokenType t);
+
+        void embed_stmts();
 
         void stmts();
 

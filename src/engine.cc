@@ -5,7 +5,7 @@
  */
 #include "engine.h"
 #include "alarm.h"
-#include <cstdlib>
+
 
 namespace Script {
 
@@ -25,10 +25,7 @@ namespace Script {
 
     typedef Environment Env;
 
-    static void assert(bool cond, const std::string &msg, const Position &pos) {
-        if (!cond)
-            error(msg, pos);
-    }
+
 
     static long long str2int(const std::string &val) {
         //char *err = NULL;
