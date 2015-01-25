@@ -316,7 +316,6 @@ namespace Script {
         std::vector<Instruction> &insts;
         std::unordered_map<size_t, size_t> &labels;
         std::vector<Token> tokens;
-        //  std::unordered_map<std::string, Closure> &closures;
 
     public:
         Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &labels);

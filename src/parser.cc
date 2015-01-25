@@ -192,6 +192,14 @@ namespace Script {
         Log::debug(TAG, "inst closure: " + inst.repr());
     }
 
+    static inline Instruction &check_args(Instruction &inst) {
+        switch (inst.opcode) {
+            //TODO
+        }
+        return inst;
+
+    }
+
     Instruction &Parser::gen_inst() {
         Instruction inst;
         const std::string &op = tokens[0].content;
@@ -213,7 +221,8 @@ namespace Script {
                     error(format("illegal arg: %s！", tokens[i].content.c_str()), tokens[i].pos);
             }
         }
-        insts.push_back(inst);
+
+        insts.push_back(check_args(inst));
         return insts.back();
     }
 
