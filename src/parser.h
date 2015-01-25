@@ -9,11 +9,12 @@
 #define PARSER_H_
 
 #include <vector>
+#include <sstream>
 #include <unordered_map>
 #include "lexer.h"
-#include <cstring>
+#include "tool.h"
 
-
+//Note: forbidden define 0
 #define EXIT 1
 #define GOTO 2
 #define CALL 3
@@ -34,140 +35,260 @@ namespace Script {
     typedef long long INT;
     typedef long double FLOAT;
 
-    class Closure {
+
+    enum Type {
+        kVAR, kSTRING, kINT, kFLOAT, kNULL, kClosure
+    };
+
+    class Environment;
+
+    class Value;
+
+    class Closure;
+
+
+    namespace GC {
+        extern std::vector<Environment *> env_gc;
+        extern std::vector<Value *> val_gc;
+
+        void gc_vals();
+
+        void gc_envs();
+    }
+
+    class Environment : public Visualable {
+    private:
+        std::unordered_map<std::string, Value *> symbols;
+        Environment *outer;
+    public:
+
+        Environment() : outer(nullptr) {
+            GC::env_gc.push_back(this);
+        }
+
+        Environment(Environment *_outer) : outer(_outer) {
+            GC::env_gc.push_back(this);
+
+        }
+
+
+        Closure *find_closure(const std::string &fun_name);
+
+        bool contains(const std::string &name);
+
+        Value *get(const std::string &name);
+
+        std::string str() const {
+            return repr();
+        }
+
+        std::string repr() const;
+
+        void set(const std::string &name, Value *value);
+    };
+
+    class Value : public Visualable {
+    public:
+        Type type;
+        Position pos;
+        static Value *NIL;
+
+        Value() : type(kNULL), pos(Position::NULL_POS) {
+        }
+
+        Value(Type _type, const Position _pos) : type(_type), pos(_pos) {
+        }
+
+        virtual ~Value() {
+        }
+
+        virtual bool operator==(const Value &v) const = 0;
+
+        virtual std::string str() const {
+            return repr();
+        }
+
+        virtual std::string repr() const = 0;
+
+    };
+
+
+    class IntValue : public Value {
+        INT val;
+    public:
+        IntValue(INT _val, const Position &_pos) : val(_val), Value(kINT, _pos) {
+            GC::val_gc.push_back(this);
+        }
+
+        bool operator==(const Value &v) const {
+            return v.type == type && v.repr() == repr();
+        }
+
+        void set_val(INT _val) {
+            val = _val;
+        }
+
+        INT get_val() {
+            return val;
+        }
+
+        std::string repr() const {
+            std::stringstream ss;
+            ss << val;
+            return ss.str();
+        }
+
+    };
+
+    class FloatValue : public Value {
+        FLOAT val;
+    public:
+        FloatValue(FLOAT _val, const Position &_pos) : val(_val), Value(kFLOAT, _pos) {
+            GC::val_gc.push_back(this);
+        }
+
+        bool operator==(const Value &v) const {
+            return v.type == type && v.repr() == repr();
+        }
+
+        std::string repr() const {
+            std::stringstream ss;
+            ss << val;
+            return ss.str();
+        }
+    };
+
+    class StrValue : public Value {
+        std::string val;
+    public:
+        StrValue(std::string _val, const Position &_pos) : val(_val), Value(kSTRING, _pos) {
+            GC::val_gc.push_back(this);
+        }
+
+        bool operator==(const Value &v) const {
+            return v.type == type && v.repr() == repr();
+        }
+
+        std::string repr() const {
+            return "\"" + val + "\"";
+        }
+
+        std::string str() const {
+            return val;
+        }
+    };
+
+
+    class VarValue : public Value {
+        std::string val;
+    public:
+        VarValue(std::string _val, const Position &_pos) : val(_val), Value(kVAR, _pos) {
+            GC::val_gc.push_back(this);
+        }
+
+
+        bool operator==(const Value &v) const {
+            return v.type == type && v.repr() == repr();
+        }
+
+        std::string repr() const {
+            return val;
+        }
+    };
+
+    class Closure : public Value {
     public:
         std::vector<std::string> args;
         std::string name;
         size_t start;
         size_t end;
 
-        Closure() : Closure("lambda", 0, 0) {
+        Closure(const Position &_pos) : Closure("lambda", 0, 0, _pos) {
         }
 
-        Closure(const std::string &_name, size_t _start, size_t _end) : name(_name), start(_start), end(_end) {
-        }
-    };
-
-    enum Type {
-        kVAR, kSTRING, kINT, kFLOAT
-    };
-
-    class Value {
-        union {
-            char *s;
-            INT num;
-            FLOAT real;
-        } val;
-    public:
-        Position pos;
-        Type type;
-        static Value NIL;
-
-        Value() : pos(Position::NULL_POS) {
-        }
-
-        Value(const std::string &str, const Position &_pos) : type(kSTRING), pos(_pos) {
-            set_string(str);
-        }
-
-        Value(INT n, const Position &_pos) : type(kINT), pos(_pos) {
-            val.num = n;
-        }
-
-        Value(FLOAT n, const Position &_pos) : type(kFLOAT), pos(_pos) {
-            val.real = n;
-        }
-
-        Value(Type _tag, const Position &_pos) : type(_tag), pos(_pos) {
-        }
-
-        Value(const Position &_pos) : pos(_pos) {
-        }
-
-        ~Value() {
-            if (type == kSTRING)
-                delete val.s;
-        }
-
-        void set_string(const std::string str, Type _tag = kSTRING) {
-            val.s = new char[str.length() + 1];
-            size_t len = str.copy(val.s, str.length(), 0);
-            val.s[len] = '\0';
-            type = _tag;
-        }
-
-        void set_int(INT n) {
-            val.num = n;
-            type = kINT;
-        }
-
-        void set_float(FLOAT real) {
-            val.real = real;
-            type = kFLOAT;
+        Closure(const std::string &_name, size_t _start, size_t _end, const Position &_pos)
+                : name(_name), start(_start), end(_end), Value(kClosure, _pos) {
+            GC::val_gc.push_back(this);
         }
 
         bool operator==(const Value &v) const {
-            return equals(v);
-        }
-
-        bool less_equals(const Value &v) const {
-            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-            return type == kINT ? val.num <= v.val.num : val.real <= v.val.real;
-        }
-
-        bool greater_equals(const Value &v) const {
-            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-            return type == kINT ? val.num >= v.val.num : val.real >= v.val.real;
-        }
-
-        bool less(const Value &v) const {
-            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-            return type == kINT ? val.num < v.val.num : val.real < v.val.real;
-        }
-
-        bool greater(const Value &v) const {
-            if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-            return type == kINT ? val.num > v.val.num : val.real > v.val.real;
-        }
-
-        bool equals(const Value &v) const {
-            int t = (int) type;
-            switch (t) {
-                case -1:
-                    return v.type == -1;
-                case kVAR:
-                case kSTRING:
-                    return !std::strcmp(val.s, v.val.s);
-                case kINT:
-                    return val.num == v.val.num;
-                case kFLOAT:
-                    return val.real == val.real;
-            }
+            return v.type == type && v.repr() == repr();
         }
 
         std::string repr() const {
-            std::stringstream ss;
-            switch (type) {
-                case kVAR:
-                case kSTRING:
-                    return std::string(val.s);
-                case kINT:
-                    ss << val.num;
-                    break;
-                case kFLOAT:
-                    ss << val.real;
-                    break;
-                default:
-                    break;
-            }
-            return ss.str();
+            return "<Fun: " + name + "(" + join(args, ',') + ")>";
         }
     };
+
+    class NullValue : public Value {
+    public:
+        NullValue() : Value(kNULL, Position::NULL_POS) {
+            GC::val_gc.push_back(this);
+        }
+
+        bool operator==(const Value &v) const {
+            return v.type == kNULL;
+        }
+
+        std::string repr() const {
+            return "NULL";
+        }
+    };
+
+/*  class Value {
+      union {
+          char *s;
+          INT num;
+          FLOAT real;
+      } val;
+  public:
+      Position pos;
+      Type type;
+      static Value NIL;
+
+      Value();
+
+      Value(const std::string &str, const Position &_pos);
+
+      Value(INT n, const Position &_pos);
+
+      Value(FLOAT n, const Position &_pos);
+
+      Value(Type _tag, const Position &_pos);
+
+      Value(const Position &_pos);
+
+      Value(const Value &value);
+
+      ~Value();
+
+      void set_str(const char *str, Type _tag);
+
+      void set_string(const std::string &str, Type _tag = kSTRING);
+
+      void set_int(INT n);
+
+      void set_float(FLOAT real);
+
+      bool operator==(const Value &v) const;
+
+      bool less_equals(const Value &v) const;
+
+      bool greater_equals(const Value &v) const;
+
+      bool less(const Value &v) const;
+
+      bool greater(const Value &v) const;
+
+      bool equals(const Value &v) const;
+
+      std::string repr() const;
+  };*/
 
     class Instruction {
     public:
         int opcode;
-        std::vector<Value> params;
+        std::vector<Value *> params;
         Position pos;
 
         Instruction() {
@@ -176,15 +297,7 @@ namespace Script {
         ~Instruction() {
         }
 
-        std::string to_str() {
-            std::stringstream ss;
-            ss << "Instruction：" << opcode;
-//            for (std::vector<Token>::iterator it = params.begin();
-//                 it != params.end(); ++it) {
-//                ss << "\t" << it->to_str();
-//            }
-            return ss.str();
-        }
+        std::string repr() const;
 
     };
 
@@ -194,16 +307,16 @@ namespace Script {
         std::vector<Instruction> &insts;
         std::unordered_map<size_t, size_t> &labels;
         std::vector<Token> tokens;
-        std::unordered_map<std::string, Closure> &closures;
+        //  std::unordered_map<std::string, Closure> &closures;
 
     public:
-        Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &labels, std::unordered_map<std::string, Closure> &_closures);
+        Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &labels);
 
-        virtual ~Parser();
+        ~Parser();
 
-        void build_inst(Instruction &inst);
+        Instruction &gen_inst();
 
-        void def();
+        void define();
 
         void match(Tag t);
 
@@ -211,10 +324,11 @@ namespace Script {
 
         void stmts();
 
-        void move_tokens();
+        void move();
 
         void parse();
     };
+
 
 } /* namespace Script */
 

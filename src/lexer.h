@@ -10,18 +10,32 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include "tool.h"
+
 
 namespace Script {
 
     enum Tag {
-        kInt, kReal, kString, kRet, kCmp, kAssign, kDef, kName, kLF, kEnd, kEOF
+        kInt, kReal, kString, kRet, kCmp, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF
     };
 
-/*
- *
- * 定位到文件的具体位置
- */
-    class Position {
+
+    class Visualable {
+    public:
+
+        virtual ~Visualable() {
+        }
+
+        virtual std::string repr() const = 0;
+
+        virtual std::string str() const = 0;
+    };
+
+    /*
+     *
+     * 定位到文件的具体位置
+     */
+    class Position : public Visualable {
     public:
         int x, y;
 
@@ -36,17 +50,18 @@ namespace Script {
         static Position NULL_POS;
 
         void set(size_t _x, size_t _y) {
-            x = (int) x;
-            y = (int) y;
+            x = (int) _x;
+            y = (int) _y;
         }
 
-        std::string to_str() const {
-            //assert(x >= 0 && y >= 0);
-//		if (x < 0 || y < 0)
-//			return std::string();
+        std::string str() const {
+            return repr();
+        }
+
+        std::string repr() const {
             std::stringstream ss;
             //Note: 从0开始
-            ss << "[" << x + 1 << ", " << y + 1 << "]";
+            ss << "(" << x + 1 << ", " << y + 1 << ")";
             return ss.str();
         }
     };
@@ -60,16 +75,25 @@ namespace Script {
         Token() {
         }
 
+        Token(size_t x, size_t y) : pos(x, y) {
+        }
+
         Token(Tag _type) :
                 tag(_type) {
         }
 
-        std::string to_str() const {
+        Token(const std::string content, Tag _type, const Position &_pos) :
+                content(content), tag(_type), pos(_pos) {
+
+        }
+
+        std::string str() const {
+            return repr();
+        }
+
+        std::string repr() const {
             std::stringstream ss;
-            static const char *typeinfo[] = {"kInt", "kReal", "kString", "KCmp",
-                    "kName", "kColon"};
-            ss << "Tag: " << typeinfo[tag] << "\t" << "Token: " << content
-                    << "\t" << " Pos: " << pos.to_str();
+            ss << "<" << '"' << content << "\" " << pos.repr() << '>';
             return ss.str();
         }
     };
@@ -88,25 +112,13 @@ namespace Script {
             return offset == text.size();
         }
 
-        bool get_name(std::string &name);
-
-        bool get_string(std::string &name);
-
-        bool get_num(std::string &name, bool &is_int);
-
-        bool get_int(std::string &name);
-
-        bool get_assign(std::string &name);
-
-        bool get_cmp(std::string &name);
-
         bool skip_space();
 
         bool skip_comment();
 
         void forward();
 
-        Token &next_token(Token &token);
+        Token next_token();
     };
 
 } /* namespace Script */

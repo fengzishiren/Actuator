@@ -12,12 +12,12 @@
 #include <cstring>
 #include <fstream>
 
-#include "alarm.h"
-#include "engine.h"
+#include "tool.h"
+#include "interp.h"
 
 #define NAME        "SonarXS"
 #define VERSION     NAME "1.0"
-#define COPYRIGHT    VERSION "  Copyright (C) 1990-2014  Lunatic Zheng, ZH"
+#define COPYRIGHT    VERSION "  Copyright (C) 2014-2015  Lunatic Zheng, ZH"
 
 static const char *progname = NAME;
 
@@ -105,7 +105,7 @@ static int doargs(int argc, char *argv[]) {
     return name == 0 ? i : name;
 }
 
-static std::string &get_code(const std::string &file, std::string &code) {
+static std::string &read_code(const std::string &file, std::string &code) {
     std::ifstream is(file.c_str());
     if (!is) {
         fprintf(stderr, "%s: not found this file '%s'.\n", progname, file.c_str());
@@ -119,32 +119,20 @@ static std::string &get_code(const std::string &file, std::string &code) {
 }
 
 int main(int argc, char **argv) {
-    Script::Log::level = Script::Log::WARN;
-
     int i = doargs(argc, argv);
     argc -= i;
     argv += i;
     if (argc <= 0)
         usage("no input files given");
-
-    Script::Log::debug("Start:");
-
+    size_t start = Script::now();
+    Script::Log::info(NAME, "Start!");
     std::string text;
-    Script::Log::debug("读入文件：%s ", *argv);
-    get_code(*argv, text);
-
-//    Script::Env env; //执行环境
-//    env.load(text);
-//
-//    Script::Engine engine; //执行器
-//    try {
-//        engine.launch(env); //执行
-//    } catch (const char *s) {
-//        std::cout << s << std::endl;
-//    }
-//
-//    Script::Log::debug("End!");
-
+    Script::Log::debug(NAME, "reading file...%s ", *argv);
+    read_code(*argv, text);
+    Script::Engine engine;
+    engine.parse(text);
+    engine.launch();
+    Script::Log::info(NAME, "The End! time elapsed %zus", Script::now() - start);
     return 0;
 }
 

@@ -7,22 +7,41 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <cstdarg>
+#include "tool.h"
 
-#include "alarm.h"
-#include "lexer.h"
 
 namespace Script {
 #define STD_FORMAT "%s  %-6s  \t- %s\n"
+#define STD_TAG_FORMAT "%s  %-6s [%s]  \t- %s\n"
+    Log::Level Log::level = Log::INFO;
+    // Log::Level Log::level = DEBUG;
+
+    std::string join(const std::vector<std::string> &vt, char sep) {
+        size_t size = vt.size();
+        if (size == 0) return std::string();
+        std::stringstream ss;
+        ss << vt[0];
+        for (size_t i = 1; i < size; ++i) {
+            ss << sep << vt[i];
+        }
+        return ss.str();
+    }
+
+    void error(const std::string &err, size_t row, size_t col) {
+        std::cerr << "assert: " << err << "(" << row + 1 << ", " << col + 1 << ")" << std::endl;
+        std::exit(-1);
+    }
 
     void error(const std::string &err, const Position &pos) {
-        std::cerr << err << ": " << pos.to_str() << std::endl;
+        std::cerr << "assert: " << err << " " << pos.repr() << std::endl;
         std::exit(-1);
     }
 
     std::string format(const char *fmt, ...) {
         int n;
         int size = 100;     /* Guess we need no more than 100 bytes */
-        char *p, *np;
+        char *p;
         va_list ap;
         p = new char[size];
         while (1) {
@@ -36,12 +55,12 @@ namespace Script {
             /* If that worked, return the string */
             if (n < size) {
                 std::string s(p);
-                delete p;
+                delete[] p;
                 return s;
             }
             /* Else try again with more space */
             size = n + 1;       /* Precisely what is needed */
-            delete p;
+            delete[]p;
             p = new char[size];
         }
     }
@@ -64,9 +83,8 @@ namespace Script {
 
     static const char *levels[] = {"DEBUG", "INFO", "WARN", "ERROR"};
 
-    Log::Level Log::level = DEBUG;
 
-    void Log::format(Level lv, const std::string &msg, va_list va) {
+    void Log::format(Level lv, const std::string &tag, const std::string &msg, va_list va) {
         char *buffer;
         char time[20];
         int n, length = 1024;
@@ -105,7 +123,11 @@ namespace Script {
                     break;
             }
         }
-        fprintf(stdout, STD_FORMAT, cur_time(time), levels[lv], buffer);
+        if (tag.empty())
+            fprintf(stderr, STD_FORMAT, cur_time(time), levels[lv], buffer);
+        else
+            fprintf(stderr, STD_TAG_FORMAT, cur_time(time), levels[lv], tag.c_str(), buffer);
+
         delete[] buffer;
     }
 
@@ -114,7 +136,16 @@ namespace Script {
             return;
         va_list va;
         va_start(va, msg);
-        format(DEBUG, msg, va);
+        format(DEBUG, "", msg, va);
+        va_end(va);
+    }
+
+    void Log::debug(const std::string tag, const std::string &msg, ...) {
+        if (DEBUG < level)
+            return;
+        va_list va;
+        va_start(va, msg);
+        format(DEBUG, tag, msg, va);
         va_end(va);
     }
 
@@ -123,7 +154,16 @@ namespace Script {
             return;
         va_list va;
         va_start(va, msg);
-        format(INFO, msg, va);
+        format(INFO, "", msg, va);
+        va_end(va);
+    }
+
+    void Log::info(const std::string tag, const std::string &msg, ...) {
+        if (INFO < level)
+            return;
+        va_list va;
+        va_start(va, msg);
+        format(INFO, tag, msg, va);
         va_end(va);
     }
 
@@ -132,15 +172,30 @@ namespace Script {
             return;
         va_list va;
         va_start(va, msg);
-        format(WARN, msg, va);
+        format(WARN, "", msg, va);
+        va_end(va);
+    }
+
+    void Log::warn(const std::string tag, const std::string &msg, ...) {
+        if (WARN < level)
+            return;
+        va_list va;
+        va_start(va, msg);
+        format(WARN, tag, msg, va);
         va_end(va);
     }
 
     void Log::error(const std::string &msg, ...) {
         va_list va;
         va_start(va, msg);
-        format(ERROR, msg, va);
+        format(ERROR, "", msg, va);
         va_end(va);
     }
 
+    void Log::error(const std::string tag, const std::string &msg, ...) {
+        va_list va;
+        va_start(va, msg);
+        format(ERROR, tag, msg, va);
+        va_end(va);
+    }
 } /* namespace Script */

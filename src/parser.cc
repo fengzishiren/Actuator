@@ -6,14 +6,203 @@
  */
 
 #include <cstdlib>
+#include <cstring>
 
 #include "parser.h"
-#include "alarm.h"
+#include "tool.h"
+
+static const std::string TAG = "parser";
 
 namespace Script {
-    Value Value::NIL = Value((Type) -1, Position::NULL_POS);
+    namespace GC {
+        std::vector<Environment *> env_gc;
+        std::vector<Value *> val_gc;
+
+        void gc_vals() {
+            for (Value *v : val_gc)
+                delete v;
+        }
+
+        void gc_envs() {
+            for (Environment *e : env_gc)
+                delete e;
+        }
+
+    }
+    Value *Value::NIL = new NullValue();
+
     static std::unordered_map<std::string, int> inst_table;
     static const std::string cmps[] = {"==", "!=", "<=", ">=", "<", ">"};
+
+    Closure *Environment::find_closure(const std::string &fun_name) {
+        Value *v = get(fun_name);
+        return v == nullptr || v->type != kClosure ? nullptr : (Closure *) v;
+    }
+
+    bool Environment::contains(const std::string &name) {
+        auto *syms = this;
+        while (syms and syms->symbols.find(name) == syms->symbols.end()) {
+            syms = this->outer;
+        }
+        return syms != nullptr;
+    }
+
+    Value *Environment::get(const std::string &name) {
+        Environment *syms = this;
+        auto pos = syms->symbols.find(name);
+        while (syms != nullptr && pos == syms->symbols.end()) {
+            syms = this->outer;
+            pos = syms->symbols.find(name);
+        }
+        return syms == nullptr ? nullptr : pos->second;
+    }
+
+
+    void Environment::set(const std::string &name, Value *value) {
+        symbols[name] = value;
+    }
+
+    std::string Environment::repr() const {
+        std::stringstream ss;
+        ss << '{';
+        for (auto &pair: symbols) {
+            ss << '"' << pair.first << '"' << ':' << pair.second->repr() << ',';
+        }
+        return ss.str();
+    }
+
+/*
+    Value::Value() : pos(Position::NULL_POS) {
+    }
+
+    Value::Value(const std::string &str, const Position &_pos) : type(kSTRING), pos(_pos) {
+        set_string(str);
+    }
+
+    Value::Value(INT n, const Position &_pos) :
+            type(kINT), pos(_pos) {
+        val.num = n;
+    }
+
+    Value::Value(FLOAT n, const Position &_pos) : type(kFLOAT), pos(_pos) {
+        val.real = n;
+    }
+
+    Value::Value(Type _tag, const Position &_pos) :
+            type(_tag), pos(_pos) {
+    }
+
+    Value::Value(const Position &_pos) : pos(_pos) {
+    }
+
+    Value::Value(const Value &value) {
+        val = value.val;
+        type = value.type;
+        pos = value.pos;
+        if (type == kSTRING || type == kVAR) {
+            set_str(value.val.s, value.type);
+        }
+    }
+
+    Value::~Value() {
+        if (type == kSTRING || type == kVAR) {
+            std::cerr << "will be deleted!" << val.s << std::endl;
+            delete[] val.s;
+        }
+        std::cerr << "delete [] ok" << std::endl;
+    }
+
+    void Value::set_string(const std::string &str, Type _tag) {
+        val.s = new char[str.length() + 1];
+        size_t len = str.copy(val.s, str.length(), 0);
+        val.s[len] = '\0';
+        type = _tag;
+    }
+
+    void Value::set_str(const char *str, Type _tag) {
+        size_t len = std::strlen(str);
+        val.s = new char[len];
+        std::strncpy(val.s, str, len);
+        val.s[len] = '\0';
+        type = _tag;
+    }
+
+    void Value::set_int(INT n) {
+        val.num = n;
+        type = kINT;
+    }
+
+    void  Value::set_float(FLOAT real) {
+        val.real = real;
+        type = kFLOAT;
+    }
+
+    bool  Value::operator==(const Value &v) const {
+        return equals(v);
+    }
+
+    bool  Value::less_equals(const Value &v) const {
+        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+        return type == kINT ? val.num <= v.val.num : val.real <= v.val.real;
+    }
+
+    bool  Value::greater_equals(const Value &v) const {
+        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+        return type == kINT ? val.num >= v.val.num : val.real >= v.val.real;
+    }
+
+    bool  Value::less(const Value &v) const {
+        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+        return type == kINT ? val.num < v.val.num : val.real < v.val.real;
+    }
+
+    bool  Value::greater(const Value &v) const {
+        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
+        return type == kINT ? val.num > v.val.num : val.real > v.val.real;
+    }
+
+    bool  Value::equals(const Value &v) const {
+        int t = (int) type;
+        switch (t) {
+            case -1:
+                return v.type == -1;
+            case kVAR:
+            case kSTRING:
+                return !std::strcmp(val.s, v.val.s);
+            case kINT:
+                return val.num == v.val.num;
+            case kFLOAT:
+                return val.real == val.real;
+        }
+    }
+
+    std::string  Value::repr() const {
+        std::stringstream ss;
+        switch (type) {
+            case kVAR:
+            case kSTRING:
+                return std::string(val.s);
+            case kINT:
+                ss << val.num;
+                break;
+            case kFLOAT:
+                ss << val.real;
+                break;
+            default:
+                break;
+        }
+        return ss.str();
+    }*/
+
+    std::string Instruction::repr() const {
+        static const char *decs[] = {"EXIT", "GOTO", "CALL", "SAY", "SET", "READ", "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ERR"};
+        std::stringstream ss;
+        ss << "<Inst: " << decs[opcode - 1] << '(';
+        ss << join(params, ',');
+        ss << ")>";
+        return ss.str();
+    }
+
 
     static void init() {
         inst_table["exit"] = EXIT;
@@ -40,9 +229,8 @@ namespace Script {
         return false;
     }
 
-    Parser::Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &_labels, std::unordered_map<std::string, Closure> &_closures)
-            :
-            lexer(_lexer), insts(_insts), labels(_labels), closures(_closures) {
+    Parser::Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &_labels) :
+            lexer(_lexer), insts(_insts), labels(_labels) {
         init();
     }
 
@@ -51,14 +239,10 @@ namespace Script {
 
     template<class T>
     static void expect(T real, T expected, const Position &pos) {
-        if (real != expected) error("语法错误！", pos);
+        if (real != expected) error("syntax error!！", pos);
     }
 
     static INT str2int(const std::string &val) {
-        //char *err = NULL;
-        //long long retval = std::strtoll(val.c_str(), &err, 10);
-        //if (*err == '\0')
-        //return retval;
         return std::strtoll(val.c_str(), NULL, 10);
     }
 
@@ -66,51 +250,74 @@ namespace Script {
         return std::strtold(val.c_str(), NULL);
     }
 
-    static Value tok2arg(Token &tok) {
-        Value arg(tok.pos);
+    static Value *tok2arg(Token &tok) {
+        Value *v;
         switch (tok.tag) {
             case kName:
-                arg.set_string(tok.content, kVAR);
+                v = new VarValue(tok.content, tok.pos);
                 break;
             case kString:
-                arg.set_string(tok.content);
+                v = new StrValue(tok.content, tok.pos);
                 break;
             case kInt:
-                arg.set_int(str2int(tok.content));
+                v = new IntValue(str2int(tok.content), tok.pos);
                 break;
             case kReal:
-                arg.set_float(str2float(tok.content));
+                v = new FloatValue(str2float(tok.content), tok.pos);
                 break;
+            default:
+                error(format("illegal arg: %s！", tok.content.c_str()), tok.pos);
+
         }
-        return arg;
+        return v;
     }
 
-    // def fun(a, b, c)
-    //   ....
-    // end
-    void Parser::def() {
-        Closure closure;
-        closure.start = insts.size();
+// def fun(a, b, c)
+//   ....
+// end
+
+// -> set fun = (a,b,c){}
+    void Parser::define() {
+        Instruction inst;
+        IntValue *after = new IntValue(0, Position::NULL_POS);
+        Instruction goto_inst;
+        goto_inst.opcode = GOTO;
+        goto_inst.pos = tokens[0].pos;
+        goto_inst.params.push_back(after);
+        insts.push_back(goto_inst);
+
+        Closure *closure = new Closure(tokens[1].pos);
+        closure->start = insts.size();
         expect(tokens[1].tag, kName, tokens[1].pos);
-        closure.name = tokens[1].content;
-        for (int i = 2; i < tokens.size() - 1; ++i) {
+        closure->name = tokens[1].content;
+        expect(tokens[2].tag, (Tag) '(', tokens.front().pos);
+
+        for (int i = 3; i < tokens.size() - 1; ++i) {
             if (i % 2) {
-                expect(tokens[i].tag, (Tag) ',', tokens[i].pos);
-            } else {
                 expect(tokens[i].tag, kName, tokens[i].pos);
-                closure.args.push_back(tokens[i].content);
+                closure->args.push_back(tokens[i].content);
+            } else {
+                expect(tokens[i].tag, (Tag) ',', tokens[i].pos);
             }
         }
         expect(tokens.back().tag, (Tag) ')', tokens.front().pos);
-        stmts();
+        embed_stmts();
         match(kEnd);
-        closures[closure.name] = closure;
-
+        closure->end = insts.size();
+        after->set_val((INT) closure->end);
+        inst.opcode = SET;
+        inst.pos = tokens[0].pos;
+        inst.params.push_back(new VarValue(closure->name, closure->pos));
+        inst.params.push_back(closure);
+        insts.push_back(inst);
+        Log::debug(TAG, "inst closure: " + inst.repr());
     }
 
-    void Parser::build_inst(Instruction &inst) {
+    Instruction &Parser::gen_inst() {
+        Instruction inst;
         const std::string &op = tokens[0].content;
         inst.opcode = inst_table[op];
+        assert(inst.opcode != 0, format("unrecognized \"%s\"", op.c_str()), tokens[0].pos);
         inst.pos = tokens[0].pos;
 
         for (size_t i = 1; i < tokens.size(); ++i) {
@@ -123,42 +330,47 @@ namespace Script {
                     inst.params.push_back(tok2arg(tokens[i]));
                     break;
                 default:
-                    Log::error(tokens[i].to_str());
-                    error("参数不符合要求！", tokens[i].pos);
+                    Log::error(tokens[i].repr());
+                    error(format("illegal arg: %s！", tokens[i].content.c_str()), tokens[i].pos);
             }
         }
+        insts.push_back(inst);
+        return insts.back();
     }
 
-    void Parser::move_tokens() {
-        bool eof = false;
+    void Parser::move() {
+        static bool eof = false;
+        tokens.clear();
         for (; !eof;) {
-            Token token;
-            lexer.next_token(token);
-            if (token.tag == kEnd) {
+            Token token = lexer.next_token();
+            if (token.tag == kEOF) {
                 eof = true;
                 break;
-            } else if (token.tag == kLF)
-                break;
-            else
+            } else if (token.tag == kLF) {
+                if (tokens.empty()) continue;
+                else break;
+            } else
                 tokens.push_back(token);
         }
         if (eof)
             tokens.push_back(Token(kEOF));
-        else if (tokens.empty())
-            move_tokens();
+        Log::debug(TAG, "moved! size: %zu tokens: %s", tokens.size(), join(tokens, ' ').c_str());
     }
 
-    static void sugar(std::vector<Token> &tokens, Instruction &inst) {
+    static inline void sugar(std::vector<Token> &tokens) {
         Token &tok = tokens.front();
         if (tok.tag == kName) {
             if (tokens.size() == 3 && tokens[1].tag == kAssign) {
                 tokens[1] = tokens[0];
                 tokens[0].content = "set";
             } else if (tokens.size() >= 3 && tokens[1].tag == '(' && tokens.back().tag == ')') {
-                inst.opcode = inst_table["call"];
+                tokens.insert(tokens.begin(), Token("call", kName, tok.pos));
+                tokens.erase(tokens.begin() + 2);
+                tokens.erase(tokens.end() - 1);
             } else if (tok.content == "if" && is_cmp(tokens[2].content)) {
                 // if a == b
-                assert(tokens.size() == 4, "语法错误", tok.pos);
+                // == a b
+                assert(tokens.size() == 4, "syntax error!", tok.pos);
                 tokens[0] = tokens[2];
                 tokens.erase(tokens.end() - 2);
             }
@@ -170,20 +382,18 @@ namespace Script {
         if (tok.tag != t) {
             error(format("unexpected %s", tok.content.c_str()), tok.pos);
         }
-        move_tokens();
+        move();
     }
 
     void Parser::embed_stmts() {
-        move_tokens();
+        move();
         do {
-            Instruction inst;
-            ///tokens
-            sugar(tokens, inst);
+            sugar(tokens);
             Token &tok = tokens.front();
             switch (tok.tag) {
                 case kCmp: {
                     size_t before = insts.size();
-                    build_inst(inst);
+                    Instruction &inst = gen_inst();
                     assert(inst.params.size() == 2, "if语句语法错误", tok.pos);
                     embed_stmts();
                     match(kEnd);
@@ -192,58 +402,52 @@ namespace Script {
                     break;
                 }
                 case kName:
-                    build_inst(inst);
-                    move_tokens();
+                    gen_inst();
+                    move();
                     break;
-                case kRet:
-                    build_inst(inst);
-                    assert(inst.params.size() == 1, "仅支持返回一个值", tok.pos);
-                    move_tokens();
-                case kEnd:
-                    continue;
-                case kEOF:
-                    error("unexpected EOF", tok.pos);
+                case kRet: {
+                    Instruction &inst = gen_inst();
+                    assert(inst.params.size() == 1, "only one value returned", tok.pos);
+                    move();
+                    break;
+                };
                 default:
-                    error(format("unexpected %s", tok.content.c_str()), tok.pos);
+                    error(format("unexpected \"%s\"", tok.content.c_str()), tok.pos);
             };
-            insts.push_back(inst);
-
-        } while ((tokens.front().tag != kEnd));
+        } while (tokens.front().tag != kEnd);
     }
 
     void Parser::stmts() {
-
-        move_tokens();
+        move();
         do {
-            Instruction inst;
-            ///tokens
-            sugar(tokens, inst);
+            sugar(tokens);
             Token &tok = tokens.front();
             switch (tok.tag) {
                 case kDef:
-                    def();
+                    define();
                     break;
                 case kCmp: {
+                    Log::debug(TAG, join(tokens, ','));
                     size_t before = insts.size();
-                    build_inst(inst);
-                    assert(inst.params.size() == 2, "if语句语法错误", tok.pos);
+                    Instruction &inst = gen_inst();
+                    Log::debug(TAG, inst.repr());
+                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
                     labels[before] = after;
                     break;
                 }
-                case kEnd:
-                    move_tokens();
                 case kEOF:
                     continue;
-                case kName:
-                    build_inst(inst);
+                case kName: {
+                    Instruction &inst = gen_inst();
+                    move();
+                    break;
+                };
                 default:
-                    error(format("unexpected %s", tok.content.c_str()), tok.pos);
+                    error(format("unexpected \"%s\"", tok.content.c_str()), tok.pos);
             };
-            insts.push_back(inst);
-
         } while (tokens.front().tag != kEOF);
     }
 
@@ -251,5 +455,6 @@ namespace Script {
     void Parser::parse() {
         stmts();
     }
+
 
 } /* namespace Script */
