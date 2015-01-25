@@ -28,7 +28,11 @@
 #define  GT 11
 #define  LS 12
 #define RET 13
-#define ERR 14
+#define ADD 14
+#define SUB 15
+#define MUL 16
+#define DIV 17
+#define ERR 18
 
 
 namespace Script {
@@ -63,14 +67,10 @@ namespace Script {
     public:
 
         Environment() : outer(nullptr) {
-            GC::env_gc.push_back(this);
         }
 
         Environment(Environment *_outer) : outer(_outer) {
-            GC::env_gc.push_back(this);
-
         }
-
 
         Closure *find_closure(const std::string &fun_name);
 
@@ -94,9 +94,11 @@ namespace Script {
         static Value *NIL;
 
         Value() : type(kNULL), pos(Position::NULL_POS) {
+            GC::val_gc.push_back(this);
         }
 
         Value(Type _type, const Position _pos) : type(_type), pos(_pos) {
+            GC::val_gc.push_back(this);
         }
 
         virtual ~Value() {
@@ -113,15 +115,66 @@ namespace Script {
     };
 
 
-    class IntValue : public Value {
+    class PrimValue : public Value {
+    public:
+        PrimValue(Type _type, const Position _pos) : Value(_type, _pos) {
+        }
+
+        virtual bool operator==(const Value &v) const {
+            return false;
+        }
+
+        virtual bool operator!=(const Value &v) const {
+            return false;
+        }
+
+        virtual bool operator>=(const Value &v) const {
+            return false;
+        }
+
+        virtual bool operator<=(const Value &v) const {
+            return false;
+        }
+
+        virtual bool operator>(const Value &v) const {
+            return false;
+        }
+
+        virtual bool operator<(const Value &v) const {
+            return false;
+        }
+
+    };
+
+    class IntValue : public PrimValue {
         INT val;
     public:
-        IntValue(INT _val, const Position &_pos) : val(_val), Value(kINT, _pos) {
-            GC::val_gc.push_back(this);
+        IntValue(INT _val, const Position &_pos) : val(_val), PrimValue(kINT, _pos) {
+
         }
 
         bool operator==(const Value &v) const {
             return v.type == type && v.repr() == repr();
+        }
+
+        bool operator!=(const Value &v) const {
+            return v.type != type || v.repr() == repr();
+        }
+
+        bool operator>=(const Value &v) const {
+            return v.type == type && ((IntValue *) &v)->val >= val;
+        }
+
+        bool operator<=(const Value &v) const {
+            return v.type == type && ((IntValue *) &v)->val <= val;
+        }
+
+        bool operator>(const Value &v) const {
+            return v.type == type && ((IntValue *) &v)->val > val;
+        }
+
+        bool operator<(const Value &v) const {
+            return v.type == type && ((IntValue *) &v)->val < val;
         }
 
         void set_val(INT _val) {
@@ -140,15 +193,22 @@ namespace Script {
 
     };
 
-    class FloatValue : public Value {
+    class FloatValue : public PrimValue {
         FLOAT val;
     public:
-        FloatValue(FLOAT _val, const Position &_pos) : val(_val), Value(kFLOAT, _pos) {
-            GC::val_gc.push_back(this);
+        FloatValue(FLOAT _val, const Position &_pos) : val(_val), PrimValue(kFLOAT, _pos) {
         }
 
         bool operator==(const Value &v) const {
             return v.type == type && v.repr() == repr();
+        }
+
+        void set_val(FLOAT _val) {
+            val = _val;
+        }
+
+        FLOAT get_val() {
+            return val;
         }
 
         std::string repr() const {
@@ -158,11 +218,11 @@ namespace Script {
         }
     };
 
-    class StrValue : public Value {
+    class StrValue : public PrimValue {
         std::string val;
     public:
-        StrValue(std::string _val, const Position &_pos) : val(_val), Value(kSTRING, _pos) {
-            GC::val_gc.push_back(this);
+        StrValue(std::string _val, const Position &_pos) : val(_val), PrimValue(kSTRING, _pos) {
+
         }
 
         bool operator==(const Value &v) const {
@@ -183,9 +243,8 @@ namespace Script {
         std::string val;
     public:
         VarValue(std::string _val, const Position &_pos) : val(_val), Value(kVAR, _pos) {
-            GC::val_gc.push_back(this);
-        }
 
+        }
 
         bool operator==(const Value &v) const {
             return v.type == type && v.repr() == repr();
@@ -208,7 +267,7 @@ namespace Script {
 
         Closure(const std::string &_name, size_t _start, size_t _end, const Position &_pos)
                 : name(_name), start(_start), end(_end), Value(kClosure, _pos) {
-            GC::val_gc.push_back(this);
+
         }
 
         bool operator==(const Value &v) const {
@@ -223,7 +282,7 @@ namespace Script {
     class NullValue : public Value {
     public:
         NullValue() : Value(kNULL, Position::NULL_POS) {
-            GC::val_gc.push_back(this);
+
         }
 
         bool operator==(const Value &v) const {
@@ -234,56 +293,6 @@ namespace Script {
             return "NULL";
         }
     };
-
-/*  class Value {
-      union {
-          char *s;
-          INT num;
-          FLOAT real;
-      } val;
-  public:
-      Position pos;
-      Type type;
-      static Value NIL;
-
-      Value();
-
-      Value(const std::string &str, const Position &_pos);
-
-      Value(INT n, const Position &_pos);
-
-      Value(FLOAT n, const Position &_pos);
-
-      Value(Type _tag, const Position &_pos);
-
-      Value(const Position &_pos);
-
-      Value(const Value &value);
-
-      ~Value();
-
-      void set_str(const char *str, Type _tag);
-
-      void set_string(const std::string &str, Type _tag = kSTRING);
-
-      void set_int(INT n);
-
-      void set_float(FLOAT real);
-
-      bool operator==(const Value &v) const;
-
-      bool less_equals(const Value &v) const;
-
-      bool greater_equals(const Value &v) const;
-
-      bool less(const Value &v) const;
-
-      bool greater(const Value &v) const;
-
-      bool equals(const Value &v) const;
-
-      std::string repr() const;
-  };*/
 
     class Instruction {
     public:

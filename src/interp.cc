@@ -14,7 +14,7 @@ namespace Script {
     static inline Value *eval(Env &env, Value *val) {
         if (val->type == kVAR) { //处理变量
             Value *v = env.get(val->repr());
-            assert(v != nullptr, "变量未定义!", val->pos);
+            assert(v != nullptr, format("var not define: %s!", val->repr().c_str()), val->pos);
             return v;
         }
         return val;
@@ -26,7 +26,8 @@ namespace Script {
     }
 
     Engine::~Engine() {
-
+        GC::gc_vals();
+        delete env;
     }
 
     void Engine::parse(const std::string &text) {
@@ -57,6 +58,40 @@ namespace Script {
         env.set(pc.params[0]->repr(), new StrValue(temp, pc.pos));
     }
 
+#define CMP(env, pc, op) {\
+        Value *left = eval(env, pc.params[0]);\
+        Value *right = eval(env, pc.params[1]);\
+        assert(left->type == right->type &&\
+            (left->type == kINT || left->type == kFLOAT), "type mismatch", pc.pos);\
+        if (*((PrimValue *) left) op *right)\
+            i = labels[i] - 1;\
+        break;\
+    };
+
+#define ARITH(env, pc, op) \
+    {\
+        std::string name = pc.params[0]->repr();\
+        Value *var = env.get(name);\
+        assert(var != nullptr, format("var not define: %s", name.c_str()), pc.pos);\
+        Value *val = eval(env, pc.params[1]);\
+        assert((var->type == kINT || var->type == kFLOAT)\
+                && (val->type == kINT || val->type == kFLOAT), "not number type", pc.pos);\
+        Value *result;\
+        if (var->type == kINT) {\
+            if (val->type == kINT)\
+                result = new IntValue(((IntValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
+            else\
+                result = new FloatValue(((IntValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
+        } else {\
+            if (val->type == kINT)\
+                result = new FloatValue(((FloatValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
+            else\
+                result = new FloatValue(((FloatValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
+        }\
+        env.set(name, result);\
+        break;\
+    };
+
     Value *Engine::execute(Env &env, size_t start, size_t end) {
         Value *val = Value::NIL;
         for (size_t i = start; i <= end; ++i) {
@@ -74,34 +109,28 @@ namespace Script {
                 case SET:
                     do_set(env, pc);
                     break;
+                case ADD: ARITH(env, pc, +)
+                case SUB: ARITH(env, pc, -)
+                case MUL: ARITH(env, pc, *)
+                case DIV: ARITH(env, pc, /)
                 case READ:
                     do_read(env, pc);
                     break;
                 case EQ:
+                    Log::debug(env.repr());
                     if (!(*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
                         i = labels[i] - 1;
                     }
                     break;
                 case NE:
-                    if (*eval(env, pc.params[0]) == *eval(env, pc.params[1])) {
+                    if (!(*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
                         i = labels[i] - 1;
                     }
                     break;
-                    /*   case LE:
-                           if (eval(env, pc.params[0]).greater(eval(env, pc.params[1])))
-                               i = labels[i] - 1;
-                           break;
-                       case GE:
-                           if (eval(env, pc.params[0]).less(eval(env, pc.params[1])))
-                               i = labels[i] - 1;;
-                           break;
-                       case GT:
-                           eval(env, pc.params[0]).less_equals(eval(env, pc.params[1]));
-
-                           break;
-                       case LS:
-                           eval(env, pc.params[0]).greater_equals(eval(env, pc.params[1]));
-                           break;*/
+                case LE: CMP(env, pc, <=)
+                case GE: CMP(env, pc, >=)
+                case GT: CMP(env, pc, >)
+                case LS: CMP(env, pc, <)
                 case CALL: {
                     Log::debug(TAG, "env: " + env.repr());
                     Env *e = new Environment(env);
@@ -109,9 +138,10 @@ namespace Script {
                     Log::debug(TAG, closure->repr());
                     assert(pc.params.size() > 1 && pc.params.size() - 1 == closure->args.size(), "函数调用参数不匹配", pc.pos);
                     for (size_t i = 0; i < closure->args.size(); ++i) {
-                        e->set(closure->args[i], pc.params[i + 1]);
+                        e->set(closure->args[i], eval(env, pc.params[i + 1]));
                     }
                     execute(*e, closure->start, closure->end);
+                    delete e;
                     break;
                 };
                 case RET:
@@ -120,17 +150,12 @@ namespace Script {
                 case ERR:
                     error(pc.params[0]->repr(), pc.pos);
                 default:
-                    std::cerr << pc.opcode << std::endl;
-                    //error(format("无法识别的指令:%s", pc.repr().c_str()), pc.pos);
+                    error(format("unrecognize :%s", pc.repr().c_str()), pc.pos);
             }
         }
         return val;
     }
 
-    static void finalize() {
-        GC::gc_vals();
-        GC::gc_envs();
-    }
 
     int Engine::launch() {
         Log::debug(TAG, "will be exe inst size:%d", insts.size());
@@ -141,7 +166,6 @@ namespace Script {
         } catch (int exit) {
             return exit;
         }
-        finalize();
         return 0;
     }
 

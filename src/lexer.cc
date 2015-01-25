@@ -16,6 +16,7 @@ namespace Script {
     static void fill() {
         keywords["def"] = kDef;
         keywords["end"] = kEnd;
+        keywords["loop"] = kLoop;
         keywords["return"] = kRet;
     }
 

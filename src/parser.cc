@@ -39,21 +39,13 @@ namespace Script {
         return v == nullptr || v->type != kClosure ? nullptr : (Closure *) v;
     }
 
-    bool Environment::contains(const std::string &name) {
-        auto *syms = this;
-        while (syms and syms->symbols.find(name) == syms->symbols.end()) {
-            syms = this->outer;
-        }
-        return syms != nullptr;
-    }
-
     Value *Environment::get(const std::string &name) {
         Environment *syms = this;
         auto pos = syms->symbols.find(name);
-        while (syms != nullptr && pos == syms->symbols.end()) {
-            syms = this->outer;
-            pos = syms->symbols.find(name);
-        }
+        if (pos == syms->symbols.end())
+            do {
+                syms = this->outer;
+            } while (syms && (pos = syms->symbols.find(name)) == syms->symbols.end());
         return syms == nullptr ? nullptr : pos->second;
     }
 
@@ -65,137 +57,20 @@ namespace Script {
     std::string Environment::repr() const {
         std::stringstream ss;
         ss << '{';
+        if (outer)
+            ss << "\"outer\": $ref,";
         for (auto &pair: symbols) {
             ss << '"' << pair.first << '"' << ':' << pair.second->repr() << ',';
         }
+        ss.seekp((long) ss.tellp() - 1);
+        ss << '}';
         return ss.str();
     }
-
-/*
-    Value::Value() : pos(Position::NULL_POS) {
-    }
-
-    Value::Value(const std::string &str, const Position &_pos) : type(kSTRING), pos(_pos) {
-        set_string(str);
-    }
-
-    Value::Value(INT n, const Position &_pos) :
-            type(kINT), pos(_pos) {
-        val.num = n;
-    }
-
-    Value::Value(FLOAT n, const Position &_pos) : type(kFLOAT), pos(_pos) {
-        val.real = n;
-    }
-
-    Value::Value(Type _tag, const Position &_pos) :
-            type(_tag), pos(_pos) {
-    }
-
-    Value::Value(const Position &_pos) : pos(_pos) {
-    }
-
-    Value::Value(const Value &value) {
-        val = value.val;
-        type = value.type;
-        pos = value.pos;
-        if (type == kSTRING || type == kVAR) {
-            set_str(value.val.s, value.type);
-        }
-    }
-
-    Value::~Value() {
-        if (type == kSTRING || type == kVAR) {
-            std::cerr << "will be deleted!" << val.s << std::endl;
-            delete[] val.s;
-        }
-        std::cerr << "delete [] ok" << std::endl;
-    }
-
-    void Value::set_string(const std::string &str, Type _tag) {
-        val.s = new char[str.length() + 1];
-        size_t len = str.copy(val.s, str.length(), 0);
-        val.s[len] = '\0';
-        type = _tag;
-    }
-
-    void Value::set_str(const char *str, Type _tag) {
-        size_t len = std::strlen(str);
-        val.s = new char[len];
-        std::strncpy(val.s, str, len);
-        val.s[len] = '\0';
-        type = _tag;
-    }
-
-    void Value::set_int(INT n) {
-        val.num = n;
-        type = kINT;
-    }
-
-    void  Value::set_float(FLOAT real) {
-        val.real = real;
-        type = kFLOAT;
-    }
-
-    bool  Value::operator==(const Value &v) const {
-        return equals(v);
-    }
-
-    bool  Value::less_equals(const Value &v) const {
-        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-        return type == kINT ? val.num <= v.val.num : val.real <= v.val.real;
-    }
-
-    bool  Value::greater_equals(const Value &v) const {
-        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-        return type == kINT ? val.num >= v.val.num : val.real >= v.val.real;
-    }
-
-    bool  Value::less(const Value &v) const {
-        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-        return type == kINT ? val.num < v.val.num : val.real < v.val.real;
-    }
-
-    bool  Value::greater(const Value &v) const {
-        if (type != v.type || (type != kINT && type != kFLOAT)) return false;
-        return type == kINT ? val.num > v.val.num : val.real > v.val.real;
-    }
-
-    bool  Value::equals(const Value &v) const {
-        int t = (int) type;
-        switch (t) {
-            case -1:
-                return v.type == -1;
-            case kVAR:
-            case kSTRING:
-                return !std::strcmp(val.s, v.val.s);
-            case kINT:
-                return val.num == v.val.num;
-            case kFLOAT:
-                return val.real == val.real;
-        }
-    }
-
-    std::string  Value::repr() const {
-        std::stringstream ss;
-        switch (type) {
-            case kVAR:
-            case kSTRING:
-                return std::string(val.s);
-            case kINT:
-                ss << val.num;
-                break;
-            case kFLOAT:
-                ss << val.real;
-                break;
-            default:
-                break;
-        }
-        return ss.str();
-    }*/
 
     std::string Instruction::repr() const {
-        static const char *decs[] = {"EXIT", "GOTO", "CALL", "SAY", "SET", "READ", "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ERR"};
+        static const char *decs[] = {"EXIT", "GOTO", "CALL", "SAY", "SET",
+                "READ", "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ADD",
+                "SUB", "MULL", "DIV" "ERR"};
         std::stringstream ss;
         ss << "<Inst: " << decs[opcode - 1] << '(';
         ss << join(params, ',');
@@ -219,6 +94,10 @@ namespace Script {
         inst_table["<"] = GT;
         inst_table[">"] = LS;
         inst_table["return"] = RET;
+        inst_table["add"] = ADD;
+        inst_table["sub"] = SUB;
+        inst_table["mul"] = MUL;
+        inst_table["div"] = DIV;
         inst_table["error"] = ERR;
     }
 
@@ -374,6 +253,13 @@ namespace Script {
                 tokens[0] = tokens[2];
                 tokens.erase(tokens.end() - 2);
             }
+        } else if (tok.tag == kLoop) {
+            // loop a == b
+            // == a b
+            assert(tokens.size() == 4, "syntax error!", tok.pos);
+            tokens[0] = tokens[2];
+            tokens[0].tag = kLoop;
+            tokens.erase(tokens.end() - 2);
         }
     }
 
@@ -394,13 +280,29 @@ namespace Script {
                 case kCmp: {
                     size_t before = insts.size();
                     Instruction &inst = gen_inst();
-                    assert(inst.params.size() == 2, "if语句语法错误", tok.pos);
+                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
                     labels[before] = after;
                     break;
                 }
+                case kLoop: {
+                    size_t before = insts.size();
+                    Instruction &inst = gen_inst();
+                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    embed_stmts();
+                    match(kEnd);
+                    size_t after = insts.size();
+                    labels[before] = after + 1;
+                    IntValue *front = new IntValue(before, tok.pos);
+                    Instruction goto_inst;
+                    goto_inst.opcode = GOTO;
+                    goto_inst.pos = tokens[0].pos;
+                    goto_inst.params.push_back(front);
+                    insts.push_back(goto_inst);
+                    break;
+                };
                 case kName:
                     gen_inst();
                     move();
@@ -438,6 +340,22 @@ namespace Script {
                     labels[before] = after;
                     break;
                 }
+                case kLoop: {
+                    size_t before = insts.size();
+                    Instruction &inst = gen_inst();
+                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    embed_stmts();
+                    match(kEnd);
+                    size_t after = insts.size();
+                    labels[before] = after + 1;
+                    IntValue *front = new IntValue(before, tok.pos);
+                    Instruction goto_inst;
+                    goto_inst.opcode = GOTO;
+                    goto_inst.pos = tokens[0].pos;
+                    goto_inst.params.push_back(front);
+                    insts.push_back(goto_inst);
+                    break;
+                };
                 case kEOF:
                     continue;
                 case kName: {

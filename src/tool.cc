@@ -14,8 +14,8 @@
 namespace Script {
 #define STD_FORMAT "%s  %-6s  \t- %s\n"
 #define STD_TAG_FORMAT "%s  %-6s [%s]  \t- %s\n"
-    Log::Level Log::level = Log::INFO;
-    // Log::Level Log::level = DEBUG;
+    // Log::Level Log::level = Log::INFO;
+    Log::Level Log::level = DEBUG;
 
     std::string join(const std::vector<std::string> &vt, char sep) {
         size_t size = vt.size();
@@ -29,12 +29,12 @@ namespace Script {
     }
 
     void error(const std::string &err, size_t row, size_t col) {
-        std::cerr << "assert: " << err << "(" << row + 1 << ", " << col + 1 << ")" << std::endl;
+        std::cerr << "error: " << err << "(" << row + 1 << ", " << col + 1 << ")" << std::endl;
         std::exit(-1);
     }
 
     void error(const std::string &err, const Position &pos) {
-        std::cerr << "assert: " << err << " " << pos.repr() << std::endl;
+        std::cerr << "error: " << err << " " << pos.repr() << std::endl;
         std::exit(-1);
     }
 
