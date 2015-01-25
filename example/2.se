@@ -1,9 +1,0 @@
-START:
-	say "Entry a string(Or quit)"
-	read val
-	if val == "quit" goto FINISH
-	say val
-	shell val
-	goto START
-FINISH:
-	exit

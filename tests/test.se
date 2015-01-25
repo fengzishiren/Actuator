@@ -1,0 +1,18 @@
+say "start a snipped script:"
+
+set var "nihao"
+if "nihao" == var
+    say "equals"
+end
+
+
+
+def main(arg)
+    say "entry main function"
+    say arg
+    say "exit main"
+end
+
+say "invoke main:"
+main(3)
+say "The End!"
