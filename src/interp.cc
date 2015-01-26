@@ -49,23 +49,43 @@ namespace Script {
         assert(pc.params.size() == 2 && pc.params[0]->type == kVAR, "syntax error!", pc.pos);
         env.set(pc.params[0]->repr(), eval(env, pc.params[1]));
     }
-
+/*
     static void do_read(Env &env, Instruction &pc) {
         assert(pc.params.size() == 1 && pc.params[0]->type == kVAR, "syntax error!",
                 pc.pos);
         std::string temp;
         std::getline(std::cin, temp);
         env.set(pc.params[0]->repr(), new StrValue(temp, pc.pos));
-    }
+    }*/
 
-#define CMP(env, pc, op) {\
-        Value *left = eval(env, pc.params[0]);\
-        Value *right = eval(env, pc.params[1]);\
-        assert(left->type == right->type &&\
-            (left->type == kINT || left->type == kFLOAT), "type mismatch", pc.pos);\
-        if (*((PrimValue *) left) op *right)\
-            i = labels[i] - 1;\
-        break;\
+    /**
+    * exclude: == and !=
+    */
+    static inline void CMP(Environment &env, Instruction &pc, std::unordered_map<size_t, size_t> &labels, int op, size_t &i) {
+        Value *left = eval(env, pc.params[0]);
+        Value *right = eval(env, pc.params[1]);
+        assert(left->type == right->type &&
+                (left->type == kINT || left->type == kFLOAT), "type mismatch", pc.pos);
+        //Log::debug(TAG, format("left:%s right: %s", left->str().c_str(), right->str().c_str()));
+        switch (op) {
+            case 0:
+                if (!(*((PrimValue *) left) >= *right))
+                    i = labels[i] - 1;
+                break;
+            case 1:
+                if (!(*((PrimValue *) left) <= *right))
+                    i = labels[i] - 1;
+                break;
+            case 2:
+                if (!((PrimValue *) left)->operator>(*right))
+                    i = labels[i] - 1;
+                break;
+            case 3:
+                if (!(*((PrimValue *) left) < *right))
+                    i = labels[i] - 1;
+                break;
+        }
+
     };
 
 #define ARITH(env, pc, op) \
@@ -83,6 +103,7 @@ namespace Script {
             else\
                 result = new FloatValue(((IntValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
         } else {\
+            assert(((IntValue *) val)->get_val() == 0, "div 0 error!", pc.pos);\
             if (val->type == kINT)\
                 result = new FloatValue(((FloatValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
             else\
@@ -113,24 +134,31 @@ namespace Script {
                 case SUB: ARITH(env, pc, -)
                 case MUL: ARITH(env, pc, *)
                 case DIV: ARITH(env, pc, /)
-                case READ:
-                    do_read(env, pc);
-                    break;
+//                case READ:
+//                    do_read(env, pc);
+//                    break;
                 case EQ:
-                    Log::debug(env.repr());
                     if (!(*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
                         i = labels[i] - 1;
                     }
                     break;
                 case NE:
-                    if (!(*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
+                    if ((*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
                         i = labels[i] - 1;
                     }
                     break;
-                case LE: CMP(env, pc, <=)
-                case GE: CMP(env, pc, >=)
-                case GT: CMP(env, pc, >)
-                case LS: CMP(env, pc, <)
+                case GE:
+                    CMP(env, pc, labels, 0, i);
+                    break;
+                case LE:
+                    CMP(env, pc, labels, 1, i);
+                    break;
+                case GT:
+                    CMP(env, pc, labels, 2, i);
+                    break;
+                case LS:
+                    CMP(env, pc, labels, 3, i);
+                    break;
                 case CALL: {
                     Log::debug(TAG, "env: " + env.repr());
                     Env *e = new Environment(env);

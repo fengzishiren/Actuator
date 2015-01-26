@@ -15,27 +15,33 @@
 #include "tool.h"
 
 //Note: forbidden define 0
+/*
 #define EXIT 1
 #define GOTO 2
 #define CALL 3
 #define SAY 4
 #define SET 5
-#define READ 6
-#define EQ 7
-#define  NE 8
-#define  LE 9
-#define  GE 10
-#define  GT 11
-#define  LS 12
-#define RET 13
-#define ADD 14
-#define SUB 15
-#define MUL 16
-#define DIV 17
-#define ERR 18
+#define EQ 6
+#define  NE 7
+#define  LE 8
+#define  GE 9
+#define  GT 10
+#define  LS 11
+#define RET 12
+#define ADD 13
+#define SUB 14
+#define MUL 15
+#define DIV 16
+#define ERR 17
+*/
 
 
 namespace Script {
+
+    enum {
+        EXIT, GOTO, CALL, SAY, SET, EQ, NE, LE, GE, GT, LS, RET, ADD, SUB, MUL, DIV, ERR
+    };
+
     typedef long long INT;
     typedef long double FLOAT;
 
@@ -52,12 +58,10 @@ namespace Script {
 
 
     namespace GC {
-        extern std::vector<Environment *> env_gc;
         extern std::vector<Value *> val_gc;
 
         void gc_vals();
 
-        void gc_envs();
     }
 
     class Environment : public Visualable {
@@ -154,27 +158,27 @@ namespace Script {
         }
 
         bool operator==(const Value &v) const {
-            return v.type == type && v.repr() == repr();
+            return v.type == type && val == ((IntValue *) &v)->val;
         }
 
         bool operator!=(const Value &v) const {
-            return v.type != type || v.repr() == repr();
+            return v.type != type || val != ((IntValue *) &v)->val;
         }
 
         bool operator>=(const Value &v) const {
-            return v.type == type && ((IntValue *) &v)->val >= val;
+            return v.type == type && val >= ((IntValue *) &v)->val;
         }
 
         bool operator<=(const Value &v) const {
-            return v.type == type && ((IntValue *) &v)->val <= val;
+            return v.type == type && val <= ((IntValue *) &v)->val;
         }
 
         bool operator>(const Value &v) const {
-            return v.type == type && ((IntValue *) &v)->val > val;
+            return v.type == type && val > ((IntValue *) &v)->val;
         }
 
         bool operator<(const Value &v) const {
-            return v.type == type && ((IntValue *) &v)->val < val;
+            return v.type == type && val < ((IntValue *) &v)->val;
         }
 
         void set_val(INT _val) {

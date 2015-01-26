@@ -123,6 +123,7 @@ namespace Script {
                     forward();
                 }
                 tok.tag = kCmp;
+                break;
             case '"':
                 forward();
                 do {

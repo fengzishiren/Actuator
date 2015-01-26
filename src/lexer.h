@@ -93,7 +93,7 @@ namespace Script {
 
         std::string repr() const {
             std::stringstream ss;
-            ss << "<" << '"' << content << "\" " << pos.repr() << '>';
+            ss << "<" << '"' << content << "\", " << tag << ' ' << pos.repr() << '>';
             return ss.str();
         }
     };

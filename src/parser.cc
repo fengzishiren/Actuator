@@ -15,7 +15,6 @@ static const std::string TAG = "parser";
 
 namespace Script {
     namespace GC {
-        std::vector<Environment *> env_gc;
         std::vector<Value *> val_gc;
 
         void gc_vals() {
@@ -23,10 +22,6 @@ namespace Script {
                 delete v;
         }
 
-        void gc_envs() {
-            for (Environment *e : env_gc)
-                delete e;
-        }
 
     }
     Value *Value::NIL = new NullValue();
@@ -69,10 +64,10 @@ namespace Script {
 
     std::string Instruction::repr() const {
         static const char *decs[] = {"EXIT", "GOTO", "CALL", "SAY", "SET",
-                "READ", "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ADD",
+                "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ADD",
                 "SUB", "MULL", "DIV" "ERR"};
         std::stringstream ss;
-        ss << "<Inst: " << decs[opcode - 1] << '(';
+        ss << "<Inst: " << decs[opcode] << '(';
         ss << join(params, ',');
         ss << ")>";
         return ss.str();
@@ -86,13 +81,12 @@ namespace Script {
         inst_table["say"] = SAY;
         inst_table["print"] = SAY;
         inst_table["set"] = SET;
-        inst_table["read"] = READ;
         inst_table["=="] = EQ;
         inst_table["!="] = NE;
         inst_table["<="] = LE;
         inst_table[">="] = GE;
-        inst_table["<"] = GT;
-        inst_table[">"] = LS;
+        inst_table["<"] = LS;
+        inst_table[">"] = GT;
         inst_table["return"] = RET;
         inst_table["add"] = ADD;
         inst_table["sub"] = SUB;
@@ -116,10 +110,6 @@ namespace Script {
     Parser::~Parser() {
     }
 
-    template<class T>
-    static void expect(T real, T expected, const Position &pos) {
-        if (real != expected) error("syntax error!！", pos);
-    }
 
     static INT str2int(const std::string &val) {
         return std::strtoll(val.c_str(), NULL, 10);
@@ -151,11 +141,16 @@ namespace Script {
         return v;
     }
 
-// def fun(a, b, c)
-//   ....
-// end
+    template<class T>
+    static void expect(T real, T expected, const Position &pos) {
+        if (real != expected) error("syntax error!！", pos);
+    }
 
-// -> set fun = (a,b,c){}
+    // def fun(a, b, c)
+    //   ....
+    // end
+
+    // -> set fun = (a,b,c){}
     void Parser::define() {
         Instruction inst;
         IntValue *after = new IntValue(0, Position::NULL_POS);
@@ -192,13 +187,24 @@ namespace Script {
         Log::debug(TAG, "inst closure: " + inst.repr());
     }
 
-    static inline Instruction &check_args(Instruction &inst) {
-        switch (inst.opcode) {
-            //TODO
-        }
-        return inst;
 
-    }
+    typedef Instruction &ck(Instruction &inst);
+
+
+    // l <= x < h
+    struct range {
+        size_t l;
+        size_t h;
+    };
+    /*
+     "EXIT", "GOTO", "CALL", "SAY", "SET", "EQ",
+     "NE", "LE", "GE", "GT", "LS", "RET", "ADD", "SUB",
+     "MULL", "DIV" "ERR"
+    */
+    static const range arg_ranges[] = {{1, 2}, {1, 2}, {2, (size_t) -1}, {1, (size_t) -1}, {2, 3}, {2, 3},
+            {2, 3}, {2, 3}, {2, 3}, {2, 3}, {2, 3}, {1, 2}, {2, 3}, {2, 3},
+            {2, 3}, {2, 3}, {2, 3},
+    };
 
     Instruction &Parser::gen_inst() {
         Instruction inst;
@@ -221,8 +227,9 @@ namespace Script {
                     error(format("illegal arg: %s！", tokens[i].content.c_str()), tokens[i].pos);
             }
         }
-
-        insts.push_back(check_args(inst));
+        range rg = arg_ranges[inst.opcode];
+        assert(rg.l <= inst.params.size() && rg.h > inst.params.size(), "illegal args count", inst.pos);
+        insts.push_back(inst);
         return insts.back();
     }
 
@@ -258,14 +265,14 @@ namespace Script {
             } else if (tok.content == "if" && is_cmp(tokens[2].content)) {
                 // if a == b
                 // == a b
-                assert(tokens.size() == 4, "syntax error!", tok.pos);
+                assert(tokens.size() > 3, "syntax error!", tok.pos);
                 tokens[0] = tokens[2];
                 tokens.erase(tokens.end() - 2);
             }
         } else if (tok.tag == kLoop) {
             // loop a == b
             // == a b
-            assert(tokens.size() == 4, "syntax error!", tok.pos);
+            assert(tokens.size() > 3, "syntax error!", tok.pos);
             tokens[0] = tokens[2];
             tokens[0].tag = kLoop;
             tokens.erase(tokens.end() - 2);
@@ -288,8 +295,7 @@ namespace Script {
             switch (tok.tag) {
                 case kCmp: {
                     size_t before = insts.size();
-                    Instruction &inst = gen_inst();
-                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    gen_inst();
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
@@ -298,13 +304,12 @@ namespace Script {
                 }
                 case kLoop: {
                     size_t before = insts.size();
-                    Instruction &inst = gen_inst();
-                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    gen_inst();
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
                     labels[before] = after + 1;
-                    IntValue *front = new IntValue(before, tok.pos);
+                    IntValue *front = new IntValue((INT) before, tok.pos);
                     Instruction goto_inst;
                     goto_inst.opcode = GOTO;
                     goto_inst.pos = tokens[0].pos;
@@ -317,8 +322,7 @@ namespace Script {
                     move();
                     break;
                 case kRet: {
-                    Instruction &inst = gen_inst();
-                    assert(inst.params.size() == 1, "only one value returned", tok.pos);
+                    gen_inst();
                     move();
                     break;
                 };
@@ -338,11 +342,8 @@ namespace Script {
                     define();
                     break;
                 case kCmp: {
-                    Log::debug(TAG, join(tokens, ','));
                     size_t before = insts.size();
-                    Instruction &inst = gen_inst();
-                    Log::debug(TAG, inst.repr());
-                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    gen_inst();
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
@@ -351,8 +352,7 @@ namespace Script {
                 }
                 case kLoop: {
                     size_t before = insts.size();
-                    Instruction &inst = gen_inst();
-                    assert(inst.params.size() == 2, "syntax error!", tok.pos);
+                    gen_inst();
                     embed_stmts();
                     match(kEnd);
                     size_t after = insts.size();
@@ -368,7 +368,7 @@ namespace Script {
                 case kEOF:
                     continue;
                 case kName: {
-                    Instruction &inst = gen_inst();
+                    gen_inst();
                     move();
                     break;
                 };
@@ -384,4 +384,4 @@ namespace Script {
     }
 
 
-} /* namespace Script */
+}; /* namespace Script */
