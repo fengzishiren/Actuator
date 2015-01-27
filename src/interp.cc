@@ -6,6 +6,12 @@
 #include "interp.h"
 #include "tool.h"
 
+#define EQ_ON 1<<0
+#define NE_ON 1<<1
+#define GE_ON 1<<2
+#define LE_ON 1<<3
+#define GT_ON 1<<4
+#define LS_ON 1<<5
 
 namespace Script {
     static const std::string TAG = "interp";
@@ -32,7 +38,7 @@ namespace Script {
 
     void Engine::parse(const std::string &text) {
         Lexer lexer(text);
-        Parser parser(lexer, insts, labels);
+        Parser parser(lexer, insts);
         parser.parse();
     }
 
@@ -49,44 +55,6 @@ namespace Script {
         assert(pc.params.size() == 2 && pc.params[0]->type == kVAR, "syntax error!", pc.pos);
         env.set(pc.params[0]->repr(), eval(env, pc.params[1]));
     }
-/*
-    static void do_read(Env &env, Instruction &pc) {
-        assert(pc.params.size() == 1 && pc.params[0]->type == kVAR, "syntax error!",
-                pc.pos);
-        std::string temp;
-        std::getline(std::cin, temp);
-        env.set(pc.params[0]->repr(), new StrValue(temp, pc.pos));
-    }*/
-
-    /**
-    * exclude: == and !=
-    */
-    static inline void CMP(Environment &env, Instruction &pc, std::unordered_map<size_t, size_t> &labels, int op, size_t &i) {
-        Value *left = eval(env, pc.params[0]);
-        Value *right = eval(env, pc.params[1]);
-        assert(left->type == right->type &&
-                (left->type == kINT || left->type == kFLOAT), "type mismatch", pc.pos);
-        //Log::debug(TAG, format("left:%s right: %s", left->str().c_str(), right->str().c_str()));
-        switch (op) {
-            case 0:
-                if (!(*((PrimValue *) left) >= *right))
-                    i = labels[i] - 1;
-                break;
-            case 1:
-                if (!(*((PrimValue *) left) <= *right))
-                    i = labels[i] - 1;
-                break;
-            case 2:
-                if (!((PrimValue *) left)->operator>(*right))
-                    i = labels[i] - 1;
-                break;
-            case 3:
-                if (!(*((PrimValue *) left) < *right))
-                    i = labels[i] - 1;
-                break;
-        }
-
-    };
 
 #define ARITH(env, pc, op) \
     {\
@@ -114,12 +82,13 @@ namespace Script {
     };
 
     Value *Engine::execute(Env &env, size_t start, size_t end) {
+        int flag = 0;
         Value *val = Value::NIL;
         for (size_t i = start; i <= end; ++i) {
             Instruction &pc = insts[i];
             Log::debug(TAG, "Executing inst: %s", pc.repr().c_str());
             switch (pc.opcode) {
-                case GOTO:
+                case JMP:
                     i = (size_t) (((IntValue *) pc.params[0])->get_val()) - 1;
                     break;
                 case EXIT:
@@ -134,30 +103,68 @@ namespace Script {
                 case SUB: ARITH(env, pc, -)
                 case MUL: ARITH(env, pc, *)
                 case DIV: ARITH(env, pc, /)
-//                case READ:
-//                    do_read(env, pc);
-//                    break;
-                case EQ:
-                    if (!(*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
-                        i = labels[i] - 1;
+                case CMP: {
+                    Value *left = eval(env, pc.params[0]);
+                    Value *right = eval(env, pc.params[1]);
+                    assert(left->type == right->type &&
+                            (left->type == kINT || left->type == kFLOAT || left->type == kSTRING), "type mismatch", pc.pos);
+                    Log::debug(TAG, format("left:%s right: %s", left->str().c_str(), right->str().c_str()));
+                    if (left->type == kINT) {
+                        if (((IntValue *) left)->operator==((IntValue *) right))
+                            flag = EQ_ON | GE_ON | LE_ON;
+                        else if (((IntValue *) left)->operator>((IntValue *) right))
+                            flag = GT_ON | GE_ON;
+                        else
+                            flag = LS_ON | LE_ON;
+                    } else if (left->type == kFLOAT) {
+                        if (((FloatValue *) left)->operator==((FloatValue *) right))
+                            flag = EQ_ON | GE_ON | LE_ON;
+                        else if (((FloatValue *) left)->operator>((FloatValue *) right))
+                            flag = GT_ON | GE_ON;
+                        else
+                            flag = LS_ON | LE_ON;
+                    } else {
+                        if (((StrValue *) left)->operator==((StrValue *) right))
+                            flag |= EQ_ON;
                     }
                     break;
-                case NE:
-                    if ((*eval(env, pc.params[0]) == *eval(env, pc.params[1]))) {
-                        i = labels[i] - 1;
+                };
+                case JEQ:
+                    if (flag & EQ_ON) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
+                        break;
+                    }
+
+                case JNE:
+                    if (flag & EQ_ON) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
+                        break;
+                    }
+
+                case JGE:
+                    if (flag & GE_ON) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
                     }
                     break;
-                case GE:
-                    CMP(env, pc, labels, 0, i);
+                case JLE:
+                    if (flag >> 3 & 1) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
+                    }
                     break;
-                case LE:
-                    CMP(env, pc, labels, 1, i);
-                    break;
-                case GT:
-                    CMP(env, pc, labels, 2, i);
-                    break;
-                case LS:
-                    CMP(env, pc, labels, 3, i);
+                case JGT:
+                    if (flag & GT_ON) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
+                    }
+                case JLS:
+                    if (flag & LS_ON) {
+                        i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
+                        flag = 0;
+                    }
                     break;
                 case CALL: {
                     Log::debug(TAG, "env: " + env.repr());
@@ -181,6 +188,7 @@ namespace Script {
                     error(format("unrecognize :%s", pc.repr().c_str()), pc.pos);
             }
         }
+
         return val;
     }
 
@@ -189,6 +197,8 @@ namespace Script {
         Log::debug(TAG, "will be exe inst size:%d", insts.size());
         Log::info(TAG, "will be exe inst lists:");
         std::cerr << join(insts, '\n') << std::endl;
+
+        //throw 0;
         try {
             execute(*env, 0, insts.size() - 1);
         } catch (int exit) {

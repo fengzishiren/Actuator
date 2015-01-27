@@ -17,6 +17,7 @@ namespace Script {
         keywords["def"] = kDef;
         keywords["end"] = kEnd;
         keywords["loop"] = kLoop;
+        keywords["if"] = kIf;
         keywords["return"] = kRet;
     }
 

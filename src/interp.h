@@ -13,15 +13,8 @@ namespace Script {
 
     class Engine {
     private:
-        size_t idx; //指令指针
-        //待执行指令集
         std::vector<Instruction> insts;
-        //  std::unordered_map<std::string, Closure> closures;
-        std::unordered_map<size_t, size_t> labels;
-        //   std::vector<Environment *> gc;
         Environment *env;
-
-
     public:
         Engine();
 

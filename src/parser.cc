@@ -26,7 +26,7 @@ namespace Script {
     }
     Value *Value::NIL = new NullValue();
 
-    static std::unordered_map<std::string, int> inst_table;
+    static std::unordered_map<std::string, INST> inst_table;
     static const std::string cmps[] = {"==", "!=", "<=", ">=", "<", ">"};
 
     Closure *Environment::find_closure(const std::string &fun_name) {
@@ -63,8 +63,10 @@ namespace Script {
     }
 
     std::string Instruction::repr() const {
-        static const char *decs[] = {"EXIT", "GOTO", "CALL", "SAY", "SET",
-                "EQ", "NE", "LE", "GE", "GT", "LS", "RET", "ADD",
+        //        EXIT, JMP, CALL, SAY, SET, CMP, JEQ, JNE, JLE, JGE, JGT, JLS, RET, ADD, SUB, MUL, DIV, ERR
+
+        static const char *decs[] = {"EXIT", "JMP", "CALL", "SAY", "SET",
+                "CMP", "JEQ", "JNE", "JLE", "JGE", "JGT", "JLS", "RET", "ADD",
                 "SUB", "MULL", "DIV" "ERR"};
         std::stringstream ss;
         ss << "<Inst: " << decs[opcode] << '(';
@@ -76,17 +78,20 @@ namespace Script {
 
     static void init() {
         inst_table["exit"] = EXIT;
-        inst_table["goto"] = GOTO;
+        inst_table["goto"] = JMP;
         inst_table["call"] = CALL;
         inst_table["say"] = SAY;
         inst_table["print"] = SAY;
         inst_table["set"] = SET;
-        inst_table["=="] = EQ;
-        inst_table["!="] = NE;
-        inst_table["<="] = LE;
-        inst_table[">="] = GE;
-        inst_table["<"] = LS;
-        inst_table[">"] = GT;
+        inst_table["cmp"] = CMP;
+        /* not cond*/
+        inst_table["=="] = JNE;
+        inst_table["!="] = JEQ;
+        inst_table["<="] = JGT;
+        inst_table[">="] = JLS;
+        inst_table["<"] = JGE;
+        inst_table[">"] = JLE;
+        /**/
         inst_table["return"] = RET;
         inst_table["add"] = ADD;
         inst_table["sub"] = SUB;
@@ -102,8 +107,8 @@ namespace Script {
         return false;
     }
 
-    Parser::Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &_labels) :
-            lexer(_lexer), insts(_insts), labels(_labels) {
+    Parser::Parser(Lexer &_lexer, std::vector<Instruction> &_insts) :
+            lexer(_lexer), insts(_insts) {
         init();
     }
 
@@ -155,7 +160,7 @@ namespace Script {
         Instruction inst;
         IntValue *after = new IntValue(0, Position::NULL_POS);
         Instruction goto_inst;
-        goto_inst.opcode = GOTO;
+        goto_inst.opcode = JMP;
         goto_inst.pos = tokens[0].pos;
         goto_inst.params.push_back(after);
         insts.push_back(goto_inst);
@@ -187,33 +192,30 @@ namespace Script {
         Log::debug(TAG, "inst closure: " + inst.repr());
     }
 
-
-    typedef Instruction &ck(Instruction &inst);
-
-
     // l <= x < h
     struct range {
         size_t l;
         size_t h;
     };
     /*
-     "EXIT", "GOTO", "CALL", "SAY", "SET", "EQ",
+     "EXIT", "JMP", "CALL", "SAY", "SET","CMP", "EQ",
      "NE", "LE", "GE", "GT", "LS", "RET", "ADD", "SUB",
      "MULL", "DIV" "ERR"
     */
-    static const range arg_ranges[] = {{1, 2}, {1, 2}, {2, (size_t) -1}, {1, (size_t) -1}, {2, 3}, {2, 3},
-            {2, 3}, {2, 3}, {2, 3}, {2, 3}, {2, 3}, {1, 2}, {2, 3}, {2, 3},
+    static const range arg_ranges[] = {{1, 2}, {1, 2}, {2, (size_t) -1}, {1, (size_t) -1}, {2, 3}, {2, 3}, {1, 2},
+            {1, 2}, {1, 2}, {1, 2}, {1, 2}, {1, 2}, {1, 2}, {2, 3}, {2, 3},
             {2, 3}, {2, 3}, {2, 3},
     };
 
-    Instruction &Parser::gen_inst() {
+    static Instruction gen_inst(std::vector<Token> &tokens, size_t start, size_t end) {
         Instruction inst;
         const std::string &op = tokens[0].content;
-        inst.opcode = inst_table[op];
-        assert(inst.opcode != 0, format("unrecognized \"%s\"", op.c_str()), tokens[0].pos);
+        auto itop = inst_table.find(op);
+        assert(itop != inst_table.end(), format("unrecognized \"%s\"", op.c_str()), tokens[0].pos);
+        inst.opcode = itop->second;
         inst.pos = tokens[0].pos;
 
-        for (size_t i = 1; i < tokens.size(); ++i) {
+        for (size_t i = start; i < end; ++i) {
             switch (tokens[i].tag) {
                 case kInt:
                 case kReal:
@@ -229,8 +231,7 @@ namespace Script {
         }
         range rg = arg_ranges[inst.opcode];
         assert(rg.l <= inst.params.size() && rg.h > inst.params.size(), "illegal args count", inst.pos);
-        insts.push_back(inst);
-        return insts.back();
+        return inst;
     }
 
     void Parser::move() {
@@ -262,20 +263,20 @@ namespace Script {
                 tokens.insert(tokens.begin(), Token("call", kName, tok.pos));
                 tokens.erase(tokens.begin() + 2);
                 tokens.erase(tokens.end() - 1);
-            } else if (tok.content == "if" && is_cmp(tokens[2].content)) {
-                // if a == b
-                // == a b
-                assert(tokens.size() > 3, "syntax error!", tok.pos);
-                tokens[0] = tokens[2];
-                tokens.erase(tokens.end() - 2);
             }
+        } else if (tok.tag == kIf) {
+            // if a == b
+            // == a b
+            assert(tokens.size() == 4 && is_cmp(tokens[2].content), "syntax error!", tok.pos);
+            tokens[0].content = "cmp";
+            std::swap(tokens[2], tokens[3]);
+
         } else if (tok.tag == kLoop) {
             // loop a == b
             // == a b
-            assert(tokens.size() > 3, "syntax error!", tok.pos);
-            tokens[0] = tokens[2];
-            tokens[0].tag = kLoop;
-            tokens.erase(tokens.end() - 2);
+            assert(tokens.size() == 4, "syntax error!", tok.pos);
+            tokens[0].content = "cmp";
+            std::swap(tokens[2], tokens[3]);
         }
     }
 
@@ -287,42 +288,83 @@ namespace Script {
         move();
     }
 
+
+    static Instruction gen_jmp_inst(const std::string &name, IntValue *after, Position pos) {
+        Instruction jmp_inst;
+        jmp_inst.opcode = inst_table[name];
+        jmp_inst.pos = pos;
+        jmp_inst.params.push_back(after);
+        return jmp_inst;
+    }
+
+    /**
+    *
+    * if a == b
+    * =>
+    * cmp a b
+    * geq after
+    */
+    void Parser::cmp() {
+        Token &tok = tokens.front();
+        Instruction cmp_inst = gen_inst(tokens, 1, tokens.size() - 1);
+        IntValue *after = new IntValue();
+        Instruction jmp_inst = gen_jmp_inst(tokens.back().content, after, tok.pos);
+        insts.push_back(cmp_inst);
+        insts.push_back(jmp_inst);
+        embed_stmts();
+        match(kEnd);
+        after->set_val((INT) insts.size());
+
+    }
+
+    /**
+    * loop a== b
+    *
+    * end
+    *
+    *
+    * L:cmp a b
+    * jne x
+    *
+    * goto L
+    */
+
+    void Parser::loop() {
+        Token &tok = tokens.front();
+        IntValue *before = new IntValue((INT) insts.size(), tok.pos);
+        IntValue *after = new IntValue();
+        Instruction cmp_inst = gen_inst(tokens, 1, tokens.size() - 1);
+        Instruction jmp_inst = gen_jmp_inst(tokens.back().content, after, tok.pos);
+        insts.push_back(cmp_inst);
+        insts.push_back(jmp_inst);
+        embed_stmts();
+        match(kEnd);
+        Instruction goto_inst = gen_jmp_inst("goto", before, tok.pos);
+        insts.push_back(goto_inst);
+        after->set_val((INT) insts.size());
+    }
+
     void Parser::embed_stmts() {
         move();
         do {
             sugar(tokens);
             Token &tok = tokens.front();
             switch (tok.tag) {
-                case kCmp: {
-                    size_t before = insts.size();
-                    gen_inst();
-                    embed_stmts();
-                    match(kEnd);
-                    size_t after = insts.size();
-                    labels[before] = after;
+                case kIf:
+                    cmp();
                     break;
-                }
-                case kLoop: {
-                    size_t before = insts.size();
-                    gen_inst();
-                    embed_stmts();
-                    match(kEnd);
-                    size_t after = insts.size();
-                    labels[before] = after + 1;
-                    IntValue *front = new IntValue((INT) before, tok.pos);
-                    Instruction goto_inst;
-                    goto_inst.opcode = GOTO;
-                    goto_inst.pos = tokens[0].pos;
-                    goto_inst.params.push_back(front);
-                    insts.push_back(goto_inst);
+                case kLoop:
+                    loop();
                     break;
-                };
-                case kName:
-                    gen_inst();
+                case kName: {
+                    Instruction inst = gen_inst(tokens, 1, tokens.size());
+                    insts.push_back(inst);
                     move();
                     break;
+                };
                 case kRet: {
-                    gen_inst();
+                    Instruction inst = gen_inst(tokens, 1, tokens.size());
+                    insts.push_back(inst);
                     move();
                     break;
                 };
@@ -341,34 +383,17 @@ namespace Script {
                 case kDef:
                     define();
                     break;
-                case kCmp: {
-                    size_t before = insts.size();
-                    gen_inst();
-                    embed_stmts();
-                    match(kEnd);
-                    size_t after = insts.size();
-                    labels[before] = after;
+                case kIf:
+                    cmp();
                     break;
-                }
-                case kLoop: {
-                    size_t before = insts.size();
-                    gen_inst();
-                    embed_stmts();
-                    match(kEnd);
-                    size_t after = insts.size();
-                    labels[before] = after + 1;
-                    IntValue *front = new IntValue(before, tok.pos);
-                    Instruction goto_inst;
-                    goto_inst.opcode = GOTO;
-                    goto_inst.pos = tokens[0].pos;
-                    goto_inst.params.push_back(front);
-                    insts.push_back(goto_inst);
+                case kLoop:
+                    loop();
                     break;
-                };
                 case kEOF:
                     continue;
                 case kName: {
-                    gen_inst();
+                    Instruction inst = gen_inst(tokens, 1, tokens.size());
+                    insts.push_back(inst);
                     move();
                     break;
                 };

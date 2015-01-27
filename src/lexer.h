@@ -16,7 +16,7 @@
 namespace Script {
 
     enum Tag {
-        kInt, kReal, kString, kRet, kCmp, kLoop, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF
+        kInt, kReal, kString, kRet, kCmp, kIf, kLoop, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF
     };
 
 

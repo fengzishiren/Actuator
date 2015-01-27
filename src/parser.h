@@ -17,7 +17,7 @@
 //Note: forbidden define 0
 /*
 #define EXIT 1
-#define GOTO 2
+#define JMP 2
 #define CALL 3
 #define SAY 4
 #define SET 5
@@ -38,8 +38,8 @@
 
 namespace Script {
 
-    enum {
-        EXIT, GOTO, CALL, SAY, SET, EQ, NE, LE, GE, GT, LS, RET, ADD, SUB, MUL, DIV, ERR
+    enum INST {
+        EXIT, JMP, CALL, SAY, SET, CMP, JEQ, JNE, JLE, JGE, JGT, JLS, RET, ADD, SUB, MUL, DIV, ERR
     };
 
     typedef long long INT;
@@ -68,6 +68,8 @@ namespace Script {
     private:
         std::unordered_map<std::string, Value *> symbols;
         Environment *outer;
+        //TODO
+        //set<Value*> gc
     public:
 
         Environment() : outer(nullptr) {
@@ -108,7 +110,7 @@ namespace Script {
         virtual ~Value() {
         }
 
-        virtual bool operator==(const Value &v) const = 0;
+        virtual bool operator==(const Value *v) const = 0;
 
         virtual std::string str() const {
             return repr();
@@ -121,26 +123,29 @@ namespace Script {
 
     class PrimValue : public Value {
     public:
+        PrimValue() : Value() {
+        }
+
         PrimValue(Type _type, const Position _pos) : Value(_type, _pos) {
         }
 
-        virtual bool operator==(const Value &v) const {
+        virtual bool operator==(const Value *v) const {
             return false;
         }
 
-        virtual bool operator!=(const Value &v) const {
+        virtual bool operator!=(const Value *v) const {
             return false;
         }
 
-        virtual bool operator>=(const Value &v) const {
+        virtual bool operator>=(const Value *v) const {
             return false;
         }
 
-        virtual bool operator<=(const Value &v) const {
+        virtual bool operator<=(const Value *v) const {
             return false;
         }
 
-        virtual bool operator>(const Value &v) const {
+        virtual bool operator>(const Value *v) const {
             return false;
         }
 
@@ -153,32 +158,35 @@ namespace Script {
     class IntValue : public PrimValue {
         INT val;
     public:
+        IntValue() : PrimValue() {
+        }
+
         IntValue(INT _val, const Position &_pos) : val(_val), PrimValue(kINT, _pos) {
 
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == type && val == ((IntValue *) &v)->val;
+        bool operator==(const Value *v) const {
+            return v->type == type && val == ((IntValue *) v)->val;
         }
 
-        bool operator!=(const Value &v) const {
-            return v.type != type || val != ((IntValue *) &v)->val;
+        bool operator!=(const Value *v) const {
+            return v->type != type || val != ((IntValue *) v)->val;
         }
 
-        bool operator>=(const Value &v) const {
-            return v.type == type && val >= ((IntValue *) &v)->val;
+        bool operator>=(const Value *v) const {
+            return v->type == type && val >= ((IntValue *) v)->val;
         }
 
-        bool operator<=(const Value &v) const {
-            return v.type == type && val <= ((IntValue *) &v)->val;
+        bool operator<=(const Value *v) const {
+            return v->type == type && val <= ((IntValue *) v)->val;
         }
 
-        bool operator>(const Value &v) const {
-            return v.type == type && val > ((IntValue *) &v)->val;
+        bool operator>(const Value *v) const {
+            return v->type == type && val > ((IntValue *) v)->val;
         }
 
-        bool operator<(const Value &v) const {
-            return v.type == type && val < ((IntValue *) &v)->val;
+        bool operator<(const Value *v) const {
+            return v->type == type && val < ((IntValue *) v)->val;
         }
 
         void set_val(INT _val) {
@@ -203,8 +211,8 @@ namespace Script {
         FloatValue(FLOAT _val, const Position &_pos) : val(_val), PrimValue(kFLOAT, _pos) {
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == type && v.repr() == repr();
+        bool operator==(const Value *v) const {
+            return v->type == type && v->repr() == repr();
         }
 
         void set_val(FLOAT _val) {
@@ -225,12 +233,12 @@ namespace Script {
     class StrValue : public PrimValue {
         std::string val;
     public:
-        StrValue(std::string _val, const Position &_pos) : val(_val), PrimValue(kSTRING, _pos) {
+        StrValue(const std::string &_val, const Position &_pos) : val(_val), PrimValue(kSTRING, _pos) {
 
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == type && v.repr() == repr();
+        bool operator==(const Value *v) const {
+            return v->type == type && v->str() == str();
         }
 
         std::string repr() const {
@@ -250,8 +258,8 @@ namespace Script {
 
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == type && v.repr() == repr();
+        bool operator==(const Value *v) const {
+            return v->type == type && v->str() == str();
         }
 
         std::string repr() const {
@@ -274,8 +282,8 @@ namespace Script {
 
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == type && v.repr() == repr();
+        bool operator==(const Value *v) const {
+            return v->type == type && v->str() == str();
         }
 
         std::string repr() const {
@@ -289,8 +297,8 @@ namespace Script {
 
         }
 
-        bool operator==(const Value &v) const {
-            return v.type == kNULL;
+        bool operator==(const Value *v) const {
+            return v->type == kNULL;
         }
 
         std::string repr() const {
@@ -300,7 +308,7 @@ namespace Script {
 
     class Instruction {
     public:
-        int opcode;
+        INST opcode;
         std::vector<Value *> params;
         Position pos;
 
@@ -318,19 +326,20 @@ namespace Script {
     private:
         Lexer &lexer;
         std::vector<Instruction> &insts;
-        std::unordered_map<size_t, size_t> &labels;
         std::vector<Token> tokens;
 
     public:
-        Parser(Lexer &_lexer, std::vector<Instruction> &_insts, std::unordered_map<size_t, size_t> &labels);
+        Parser(Lexer &_lexer, std::vector<Instruction> &_insts);
 
         ~Parser();
-
-        Instruction &gen_inst();
 
         void define();
 
         void match(Tag t);
+
+        void loop();
+
+        void cmp();
 
         void embed_stmts();
 
@@ -339,6 +348,8 @@ namespace Script {
         void move();
 
         void parse();
+
+        Instruction getInstruction(INST opcode, Token &tok, IntValue *after);
     };
 
 
