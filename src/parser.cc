@@ -64,7 +64,6 @@ namespace Script {
 
     std::string Instruction::repr() const {
         //        EXIT, JMP, CALL, SAY, SET, CMP, JEQ, JNE, JLE, JGE, JGT, JLS, RET, ADD, SUB, MUL, DIV, ERR
-
         static const char *decs[] = {"EXIT", "JMP", "CALL", "SAY", "SET",
                 "CMP", "JEQ", "JNE", "JLE", "JGE", "JGT", "JLS", "RET", "ADD",
                 "SUB", "MULL", "DIV" "ERR"};
@@ -198,7 +197,7 @@ namespace Script {
         size_t h;
     };
     /*
-     "EXIT", "JMP", "CALL", "SAY", "SET","CMP", "EQ",
+     "EXIT", "goto", "CALL", "SAY", "SET","CMP", "EQ",
      "NE", "LE", "GE", "GT", "LS", "RET", "ADD", "SUB",
      "MULL", "DIV" "ERR"
     */
@@ -345,7 +344,7 @@ namespace Script {
         insts.push_back(jmp_inst);
         cond_stmts();
         if (tokens.front().tag == kElif || tokens.front().tag == kElse) {
-            insts.push_back(gen_jmp_inst("jmp", end, tok.pos));
+            insts.push_back(gen_jmp_inst("goto", end, tok.pos));
         }
         after->set_val((INT) insts.size());
     }
