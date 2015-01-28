@@ -82,7 +82,8 @@ namespace Script {
     };
 
     Value *Engine::execute(Env &env, size_t start, size_t end) {
-        int flag = 0;
+        char flags[2048] = {0};
+        int fp = -1;
         Value *val = Value::NIL;
         for (size_t i = start; i <= end; ++i) {
             Instruction &pc = insts[i];
@@ -109,61 +110,62 @@ namespace Script {
                     assert(left->type == right->type &&
                             (left->type == kINT || left->type == kFLOAT || left->type == kSTRING), "type mismatch", pc.pos);
                     Log::debug(TAG, format("left:%s right: %s", left->str().c_str(), right->str().c_str()));
+                    fp++;
                     if (left->type == kINT) {
                         if (((IntValue *) left)->operator==((IntValue *) right))
-                            flag = EQ_ON | GE_ON | LE_ON;
+                            flags[fp] = EQ_ON | GE_ON | LE_ON;
                         else if (((IntValue *) left)->operator>((IntValue *) right))
-                            flag = GT_ON | GE_ON;
+                            flags[fp] = GT_ON | GE_ON | NE_ON;
                         else
-                            flag = LS_ON | LE_ON;
+                            flags[fp] = LS_ON | LE_ON | NE_ON;
                     } else if (left->type == kFLOAT) {
                         if (((FloatValue *) left)->operator==((FloatValue *) right))
-                            flag = EQ_ON | GE_ON | LE_ON;
+                            flags[fp] = EQ_ON | GE_ON | LE_ON;
                         else if (((FloatValue *) left)->operator>((FloatValue *) right))
-                            flag = GT_ON | GE_ON;
+                            flags[fp] = GT_ON | GE_ON | NE_ON;
                         else
-                            flag = LS_ON | LE_ON;
+                            flags[fp] = LS_ON | LE_ON | NE_ON;
                     } else {
                         if (((StrValue *) left)->operator==((StrValue *) right))
-                            flag |= EQ_ON;
+                            flags[fp] |= EQ_ON;
                     }
                     break;
                 };
                 case JEQ:
-                    if (flag & EQ_ON) {
+                    if (flags[fp] & EQ_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
-                        break;
-                    }
+                        flags[fp] = 0;
+                        fp--;
 
+                    }
+                    break;
                 case JNE:
-                    if (flag & EQ_ON) {
+                    if (flags[fp] & NE_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
-                        break;
+                        fp--;
                     }
-
+                    break;
                 case JGE:
-                    if (flag & GE_ON) {
+                    if (flags[fp] & GE_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
+                        fp--;
                     }
                     break;
                 case JLE:
-                    if (flag >> 3 & 1) {
+                    if (flags[fp] & LE_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
+                        fp--;
                     }
                     break;
                 case JGT:
-                    if (flag & GT_ON) {
+                    if (flags[fp] & GT_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
+                        fp--;
                     }
                 case JLS:
-                    if (flag & LS_ON) {
+                    if (flags[fp] & LS_ON) {
                         i = (size_t) ((IntValue *) eval(env, pc.params[0]))->get_val() - 1;
-                        flag = 0;
+                        fp--;
                     }
                     break;
                 case CALL: {

@@ -180,7 +180,7 @@ namespace Script {
             }
         }
         expect(tokens.back().tag, (Tag) ')', tokens.front().pos);
-        embed_stmts();
+        fun_stmts();
         match(kEnd);
         closure->end = insts.size();
         after->set_val((INT) closure->end);
@@ -234,6 +234,34 @@ namespace Script {
         return inst;
     }
 
+    static inline void sugar(std::vector<Token> &tokens) {
+        Token &tok = tokens.front();
+        if (tok.tag == kName) {
+            if (tokens.size() == 3 && tokens[1].tag == kAssign) {
+                tokens[1] = tokens[0];
+                tokens[0].content = "set";
+            } else if (tokens.size() >= 3 && tokens[1].tag == '(' && tokens.back().tag == ')') {
+                tokens.insert(tokens.begin(), Token("call", kName, tok.pos));
+                tokens.erase(tokens.begin() + 2);
+                tokens.erase(tokens.end() - 1);
+            }
+        } else if (tok.tag == kIf || tok.tag == kElif) {
+            // if a == b
+            // == a b
+            assert(tokens.size() == 4 && is_cmp(tokens[2].content), "syntax error!", tok.pos);
+            tokens[0].content = "cmp";
+            std::swap(tokens[2], tokens[3]);
+        } else if (tok.tag == kElse) {
+            assert(tokens.size() == 1, "else syntax errir!", tok.pos);
+        } else if (tok.tag == kLoop) {
+            // loop a == b
+            // == a b
+            assert(tokens.size() == 4, "syntax error!", tok.pos);
+            tokens[0].content = "cmp";
+            std::swap(tokens[2], tokens[3]);
+        }
+    }
+
     void Parser::move() {
         static bool eof = false;
         tokens.clear();
@@ -250,35 +278,10 @@ namespace Script {
         }
         if (eof)
             tokens.push_back(Token(kEOF));
+        else sugar(tokens);
         Log::debug(TAG, "moved! size: %zu tokens: %s", tokens.size(), join(tokens, ' ').c_str());
     }
 
-    static inline void sugar(std::vector<Token> &tokens) {
-        Token &tok = tokens.front();
-        if (tok.tag == kName) {
-            if (tokens.size() == 3 && tokens[1].tag == kAssign) {
-                tokens[1] = tokens[0];
-                tokens[0].content = "set";
-            } else if (tokens.size() >= 3 && tokens[1].tag == '(' && tokens.back().tag == ')') {
-                tokens.insert(tokens.begin(), Token("call", kName, tok.pos));
-                tokens.erase(tokens.begin() + 2);
-                tokens.erase(tokens.end() - 1);
-            }
-        } else if (tok.tag == kIf) {
-            // if a == b
-            // == a b
-            assert(tokens.size() == 4 && is_cmp(tokens[2].content), "syntax error!", tok.pos);
-            tokens[0].content = "cmp";
-            std::swap(tokens[2], tokens[3]);
-
-        } else if (tok.tag == kLoop) {
-            // loop a == b
-            // == a b
-            assert(tokens.size() == 4, "syntax error!", tok.pos);
-            tokens[0].content = "cmp";
-            std::swap(tokens[2], tokens[3]);
-        }
-    }
 
     void Parser::match(Tag t) {
         Token &tok = tokens.front();
@@ -297,25 +300,103 @@ namespace Script {
         return jmp_inst;
     }
 
+    void Parser::cond_stmts() {
+        move();
+        do {
+            Log::debug(TAG, format("cond tokens: %s", join(tokens, ',').c_str()));
+            Token &tok = tokens.front();
+            switch (tok.tag) {
+                case kIf:
+//                case kElif:
+//                case kElse:
+                    cond();
+                    break;
+                case kLoop:
+                    loop();
+                    break;
+                case kName: {
+                    Instruction inst = gen_inst(tokens, 1, tokens.size());
+                    insts.push_back(inst);
+                    move();
+                    break;
+                };
+                case kRet: {
+                    Instruction inst = gen_inst(tokens, 1, tokens.size());
+                    insts.push_back(inst);
+                    move();
+                    break;
+                };
+                default:
+                    error(format("unexpected \"%s\"", tok.content.c_str()), tok.pos);
+            };
+        } while (tokens.front().tag != kEnd && tokens.front().tag != kElif && tokens.front().tag != kElse);
+    }
+
+
     /**
-    *
-    * if a == b
-    * =>
-    * cmp a b
-    * geq after
+    * compare and jump
     */
-    void Parser::cmp() {
+    void Parser::caj(IntValue *end) {
         Token &tok = tokens.front();
         Instruction cmp_inst = gen_inst(tokens, 1, tokens.size() - 1);
         IntValue *after = new IntValue();
         Instruction jmp_inst = gen_jmp_inst(tokens.back().content, after, tok.pos);
         insts.push_back(cmp_inst);
         insts.push_back(jmp_inst);
-        embed_stmts();
-        match(kEnd);
+        cond_stmts();
+        if (tokens.front().tag == kElif || tokens.front().tag == kElse) {
+            insts.push_back(gen_jmp_inst("jmp", end, tok.pos));
+        }
         after->set_val((INT) insts.size());
-
     }
+
+    /**
+    *
+    * if
+    * elif
+    * else
+    *
+    * eg:
+    *	if a == b
+    *		xxx
+    *	elif a==c
+    *		xxxx
+    *	elif a == d
+    *		xxxxx
+    *	else
+    *		xxxxxxxx
+    *
+    *		cmp a b
+    *		jne after1
+    *		exe xxx
+    *		jmp 4
+    *	1	cmp a c
+    *		jne after2
+    *		exe xxxx
+    *		jmp 4
+    *	2	cmp a d
+    *		jne after3
+    *		exe xxxxx
+    *		jmp 4
+    *	3	exe xxxxxxx
+    *	4
+    *
+    */
+    void Parser::cond() {
+        IntValue *end = new IntValue();
+        caj(end);
+        Token &tok = tokens.front();
+        while (tok.tag == kElif) {
+            caj(end);
+        }
+        if (tok.tag == kElse) {
+            cond_stmts();
+        } /*else
+            insts.pop_back();*/
+        end->set_val((INT) insts.size());
+        match(kEnd);
+    }
+
 
     /**
     * loop a== b
@@ -328,7 +409,6 @@ namespace Script {
     *
     * goto L
     */
-
     void Parser::loop() {
         Token &tok = tokens.front();
         IntValue *before = new IntValue((INT) insts.size(), tok.pos);
@@ -337,21 +417,20 @@ namespace Script {
         Instruction jmp_inst = gen_jmp_inst(tokens.back().content, after, tok.pos);
         insts.push_back(cmp_inst);
         insts.push_back(jmp_inst);
-        embed_stmts();
+        fun_stmts();
         match(kEnd);
         Instruction goto_inst = gen_jmp_inst("goto", before, tok.pos);
         insts.push_back(goto_inst);
         after->set_val((INT) insts.size());
     }
 
-    void Parser::embed_stmts() {
+    void Parser::fun_stmts() {
         move();
         do {
-            sugar(tokens);
             Token &tok = tokens.front();
             switch (tok.tag) {
                 case kIf:
-                    cmp();
+                    cond();
                     break;
                 case kLoop:
                     loop();
@@ -377,14 +456,13 @@ namespace Script {
     void Parser::stmts() {
         move();
         do {
-            sugar(tokens);
             Token &tok = tokens.front();
             switch (tok.tag) {
                 case kDef:
                     define();
                     break;
                 case kIf:
-                    cmp();
+                    cond();
                     break;
                 case kLoop:
                     loop();

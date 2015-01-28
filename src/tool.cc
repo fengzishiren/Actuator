@@ -14,8 +14,8 @@
 namespace Script {
 #define STD_FORMAT "%s  %-6s  \t- %s\n"
 #define STD_TAG_FORMAT "%s  %-6s [%s]  \t- %s\n"
-    // Log::Level Log::level = Log::INFO;
-    Log::Level Log::level = DEBUG;
+    //Log::Level Log::level = Log::INFO;
+   Log::Level Log::level = DEBUG;
 
     std::string join(const std::vector<std::string> &vt, char sep) {
         size_t size = vt.size();

@@ -18,6 +18,8 @@ namespace Script {
         keywords["end"] = kEnd;
         keywords["loop"] = kLoop;
         keywords["if"] = kIf;
+        keywords["elif"] = kElif;
+        keywords["else"] = kElse;
         keywords["return"] = kRet;
     }
 

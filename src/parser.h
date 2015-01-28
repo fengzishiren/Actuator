@@ -339,9 +339,13 @@ namespace Script {
 
         void loop();
 
-        void cmp();
+        void caj(IntValue *end);
 
-        void embed_stmts();
+        void cond();
+
+        void cond_stmts();
+
+        void fun_stmts();
 
         void stmts();
 
@@ -349,7 +353,6 @@ namespace Script {
 
         void parse();
 
-        Instruction getInstruction(INST opcode, Token &tok, IntValue *after);
     };
 
 
