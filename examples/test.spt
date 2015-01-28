@@ -1,0 +1,36 @@
+say "start a snipped script:"
+
+set var "nihao"
+if "nihao" != var
+    say "not equals"
+end
+
+if 1 > 2
+    say "unreach forever"
+end
+
+if 1 == 1
+    say "1 == 1"
+end
+
+
+def main(arg)
+    say "entry main function"
+    say arg
+    say "exit main"
+end
+
+say "invoke main:"
+main(3)
+set a 250
+add a 250
+say a
+main(a)
+
+i = 0
+loop i < 3
+    say i
+    add i 1
+end
+
+say "The End!"

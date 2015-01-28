@@ -1,0 +1,11 @@
+a = 0
+
+if a == 1
+    say "a == 1"
+elif a == 2
+    say "a == 2"
+elif a == 3
+    say "a == 3"
+else
+    say "a : 0"
+end
