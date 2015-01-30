@@ -1,8 +1,8 @@
 /*
- * Parser.cc
+ * parser.cc
  *
  *  Created on: 2014年6月6日
- *      Author: lunatic
+ *      Author: fengzishiren
  */
 
 #include <cstdlib>
@@ -62,13 +62,19 @@ namespace Script {
         return ss.str();
     }
 
+    static const char *inst_descs[] = {"EXIT", "JMP", "CALL", "SAY", "SET",
+            "CMP", "JEQ", "JNE", "JLE", "JGE", "JGT", "JLS", "RET", "ADD",
+            "SUB", "MULL", "DIV" "ERR"};
+
+    std::string Instruction::desc_of(INST inst) {
+        return inst_descs[inst];
+    }
+
     std::string Instruction::repr() const {
         //        EXIT, JMP, CALL, SAY, SET, CMP, JEQ, JNE, JLE, JGE, JGT, JLS, RET, ADD, SUB, MUL, DIV, ERR
-        static const char *decs[] = {"EXIT", "JMP", "CALL", "SAY", "SET",
-                "CMP", "JEQ", "JNE", "JLE", "JGE", "JGT", "JLS", "RET", "ADD",
-                "SUB", "MULL", "DIV" "ERR"};
+
         std::stringstream ss;
-        ss << "<Inst: " << decs[opcode] << '(';
+        ss << "<Inst: " << inst_descs[opcode] << '(';
         ss << join(params, ',');
         ss << ")>";
         return ss.str();
@@ -201,7 +207,7 @@ namespace Script {
      "NE", "LE", "GE", "GT", "LS", "RET", "ADD", "SUB",
      "MULL", "DIV" "ERR"
     */
-    static const range arg_ranges[] = {{1, 2}, {1, 2}, {2, (size_t) -1}, {1, (size_t) -1}, {2, 3}, {2, 3}, {1, 2},
+    static const range arg_ranges[] = {{1, 2}, {1, 2}, {1, (size_t) -1}, {1, (size_t) -1}, {2, 3}, {2, 3}, {1, 2},
             {1, 2}, {1, 2}, {1, 2}, {1, 2}, {1, 2}, {1, 2}, {2, 3}, {2, 3},
             {2, 3}, {2, 3}, {2, 3},
     };
@@ -229,7 +235,8 @@ namespace Script {
             }
         }
         range rg = arg_ranges[inst.opcode];
-        assert(rg.l <= inst.params.size() && rg.h > inst.params.size(), "illegal args count", inst.pos);
+        assert(rg.l <= inst.params.size() && rg.h > inst.params.size(),
+                format("illegal args count, expect: %zu<=%zu<=%zu , but given: %zu.", rg.l, inst.params.size(), rg.h), inst.pos);
         return inst;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Lexer.cc
+ * lexer.cc
  *
  *      Author: Lunatic
  */

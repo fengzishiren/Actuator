@@ -1,10 +1,8 @@
-//============================================================================
-// Name        : Actuator.cpp
-// Author      : Lunatic
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+/*
+ * main.cc
+ *
+ *      Author: fengzishiren
+ */
 
 #include <iostream>
 #include <cstdio>
@@ -41,18 +39,17 @@ static void usage(const char *message) {
 }
 
 //not found return -1
-static int str2level(const std::string &lv) {
+static int str2level(std::string lv) {
     int level = -1;
-    if (lv == "DEBUG")
+    if (Script::upper(lv) == "DEBUG")
         level = Script::Log::DEBUG;
-    else if (lv == "INFO")
+    else if (Script::upper(lv) == "INFO")
         level = Script::Log::INFO;
-    else if (lv == "WARN")
+    else if (Script::upper(lv) == "WARN")
         level = Script::Log::WARN;
-    else if (lv == "ERROR")
+    else if (Script::upper(lv) == "ERROR")
         level = Script::Log::ERROR;
     return level;
-
 }
 
 static int doargs(int argc, char *argv[]) {
@@ -68,6 +65,7 @@ static int doargs(int argc, char *argv[]) {
             break;
         else if (IS("-name")) {
             if (i + 1 < argc) {
+                //locate -name
                 name = ++i;
             } else
                 usage("Illegal args!");
@@ -105,7 +103,8 @@ static int doargs(int argc, char *argv[]) {
     return name == 0 ? i : name;
 }
 
-static std::string &read_code(const std::string &file, std::string &code) {
+static std::string read_code(const std::string &file) {
+    std::string code;
     std::ifstream is(file.c_str());
     if (!is) {
         fprintf(stderr, "%s: not found this file '%s'.\n", progname, file.c_str());
@@ -126,9 +125,8 @@ int main(int argc, char **argv) {
         usage("no input files given");
     size_t start = Script::now();
     Script::Log::info(NAME, "Start!");
-    std::string text;
     Script::Log::debug(NAME, "reading file...%s ", *argv);
-    read_code(*argv, text);
+    std::string text = read_code(*argv);
     Script::Engine engine;
     engine.parse(text);
     engine.launch();

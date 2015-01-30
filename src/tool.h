@@ -1,7 +1,7 @@
 /*
- * Alarm.h
+ * tool.h
  *
- *      Author: Lunatic
+ *      Author: fengzishiren
  */
 
 #ifndef TOOL_H_
@@ -64,6 +64,10 @@ namespace Script {
     void assert(bool cond, const std::string &msg, const Position &pos);
 
     std::string format(const char *fmt, ...);
+
+    std::string &lower(std::string &src);
+
+    std::string &upper(std::string &src);
 
     class Log {
     public:

@@ -1,7 +1,7 @@
 /*
- * engine.cc
+ * interp.cc
  *
- *      Author: Lunatic
+ *      Author: fengzishiren
  */
 #include "interp.h"
 #include "tool.h"
@@ -43,10 +43,12 @@ namespace Script {
     }
 
     static void do_say(Env &env, Instruction &pc) {
-        assert(pc.params.size() > 0, "syntax error!", pc.pos);
-        for (Value *arg : pc.params) {
-            Value *v = eval(env, arg);
-            std::cerr << v->str();
+        //parser verify pc.params count
+        //must must be not less than 1
+        //assert(pc.params.size() > 0, "syntax error!", pc.pos);
+        std::cerr << eval(env, pc.params[0])->str();
+        for (size_t i = 1; i < pc.params.size(); ++i) {
+            std::cerr << ' ' << eval(env, pc.params[i])->str();
         }
         std::cerr << std::endl;
     }
@@ -65,17 +67,12 @@ namespace Script {
         assert((var->type == kINT || var->type == kFLOAT)\
                 && (val->type == kINT || val->type == kFLOAT), "not number type", pc.pos);\
         Value *result;\
-        if (var->type == kINT) {\
-            if (val->type == kINT)\
-                result = new IntValue(((IntValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
-            else\
-                result = new FloatValue(((IntValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
+        if (pc.opcode == DIV)\
+            assert(((IntValue *) val)->get_val() != 0,  "div 0 error!", pc.pos);\
+        if (var->type == kFLOAT || val->type == kFLOAT) {\
+            result = new FloatValue(((IntValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
         } else {\
-            assert(((IntValue *) val)->get_val() == 0, "div 0 error!", pc.pos);\
-            if (val->type == kINT)\
-                result = new FloatValue(((FloatValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
-            else\
-                result = new FloatValue(((FloatValue *) var)->get_val() op ((FloatValue *) val)->get_val(), pc.pos);\
+            result = new IntValue(((IntValue *) var)->get_val() op ((IntValue *) val)->get_val(), pc.pos);\
         }\
         env.set(name, result);\
         break;\
@@ -173,7 +170,9 @@ namespace Script {
                     Env *e = new Environment(env);
                     const Closure *closure = e->find_closure(pc.params[0]->repr());
                     Log::debug(TAG, closure->repr());
-                    assert(pc.params.size() > 1 && pc.params.size() - 1 == closure->args.size(), "函数调用参数不匹配", pc.pos);
+                    assert(pc.params.size() - 1 == closure->args.size(),
+                            format("Function call parameters do not match! expect %zu, but given %zu",
+                                    closure->args.size(), pc.params.size() - 1), pc.pos);
                     for (size_t i = 0; i < closure->args.size(); ++i) {
                         e->set(closure->args[i], eval(env, pc.params[i + 1]));
                     }
@@ -202,7 +201,8 @@ namespace Script {
 
         //throw 0;
         try {
-            execute(*env, 0, insts.size() - 1);
+            if (insts.size() > 0)
+                execute(*env, 0, insts.size() - 1);
         } catch (int exit) {
             return exit;
         }

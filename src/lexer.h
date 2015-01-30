@@ -1,7 +1,7 @@
 /*
- * Lexer.h
+ * lexer.h
  *
- *      Author: Lunatic
+ *      Author: fengzishiren
  */
 
 #ifndef LEXER_H_
@@ -19,6 +19,8 @@ namespace Script {
         kInt, kReal, kString, kRet, kCmp, kIf, kElif, kElse, kLoop, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF
     };
 
+    static const char *tag_descs[] = {"int", "real", "str", "return", "cmp", "if", "elif", "else",
+            "loop", "!", "=", "def", "var", "NEWLINE", "end", "EOF"};
 
     class Visualable {
     public:
@@ -66,7 +68,7 @@ namespace Script {
         }
     };
 
-    class Token {
+    class Token : public Visualable {
     public:
         Tag tag;
         std::string content;
@@ -91,9 +93,16 @@ namespace Script {
             return repr();
         }
 
+        static std::string desc_of(Tag tag) {
+            std::string desc("<");
+            desc += tag_descs[tag];
+            desc += ">";
+            return desc;
+        }
+
         std::string repr() const {
             std::stringstream ss;
-            ss << "<" << '"' << content << "\", " << tag << ' ' << pos.repr() << '>';
+            ss << '<' << tag_descs[tag] << ", " << '"' << content << "\", " << tag << ' ' << pos.repr() << '>';
             return ss.str();
         }
     };

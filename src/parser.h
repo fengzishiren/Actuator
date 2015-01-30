@@ -1,8 +1,8 @@
 /*
- * Parser.h
+ * parser.h
  *
  *  Created on: 2014年6月6日
- *      Author: lunatic
+ *      Author: fengzishiren
  */
 
 #ifndef PARSER_H_
@@ -319,6 +319,8 @@ namespace Script {
         }
 
         std::string repr() const;
+
+        static std::string desc_of(INST inst);
 
     };
 

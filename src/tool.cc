@@ -1,7 +1,7 @@
 /*
- * Alarm.cc
+ * tool.cc
  *
- *      Author: Lunatic
+ *      Author: fengzishiren
  */
 #include <iostream>
 #include <cstdio>
@@ -15,7 +15,7 @@ namespace Script {
 #define STD_FORMAT "%s  %-6s  \t- %s\n"
 #define STD_TAG_FORMAT "%s  %-6s [%s]  \t- %s\n"
     //Log::Level Log::level = Log::INFO;
-   Log::Level Log::level = DEBUG;
+    Log::Level Log::level = DEBUG;
 
     std::string join(const std::vector<std::string> &vt, char sep) {
         size_t size = vt.size();
@@ -83,6 +83,20 @@ namespace Script {
 
     static const char *levels[] = {"DEBUG", "INFO", "WARN", "ERROR"};
 
+
+    std::string &lower(std::string &src) {
+        for (auto &c : src) {
+            c = c <= 'Z' && c >= 'A' ? 'a' - 'A' + c : c;
+        }
+        return src;
+    }
+
+    std::string &upper(std::string &src) {
+        for (auto &c : src) {
+            c = c <= 'z' && c >= 'a' ? c - 'a' + 'A' : c;
+        }
+        return src;
+    }
 
     void Log::format(Level lv, const std::string &tag, const std::string &msg, va_list va) {
         char *buffer;
