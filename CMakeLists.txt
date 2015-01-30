@@ -16,4 +16,5 @@ set(SOURCE_FILES
     LICENSE.md
     README.md)
 
+add_definitions(-Wall)
 add_executable(Actuator ${SOURCE_FILES})
