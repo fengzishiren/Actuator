@@ -161,7 +161,7 @@ namespace Script {
         IntValue() : PrimValue() {
         }
 
-        IntValue(INT _val, const Position &_pos) : val(_val), PrimValue(kINT, _pos) {
+        IntValue(INT _val, const Position &_pos) : PrimValue(kINT, _pos), val(_val) {
 
         }
 
@@ -208,7 +208,7 @@ namespace Script {
     class FloatValue : public PrimValue {
         FLOAT val;
     public:
-        FloatValue(FLOAT _val, const Position &_pos) : val(_val), PrimValue(kFLOAT, _pos) {
+        FloatValue(FLOAT _val, const Position &_pos) : PrimValue(kFLOAT, _pos), val(_val) {
         }
 
         bool operator==(const Value *v) const {
@@ -233,7 +233,7 @@ namespace Script {
     class StrValue : public PrimValue {
         std::string val;
     public:
-        StrValue(const std::string &_val, const Position &_pos) : val(_val), PrimValue(kSTRING, _pos) {
+        StrValue(const std::string &_val, const Position &_pos) : PrimValue(kSTRING, _pos), val(_val) {
 
         }
 
@@ -254,7 +254,7 @@ namespace Script {
     class VarValue : public Value {
         std::string val;
     public:
-        VarValue(std::string _val, const Position &_pos) : val(_val), Value(kVAR, _pos) {
+        VarValue(std::string _val, const Position &_pos) : Value(kVAR, _pos), val(_val) {
 
         }
 
@@ -278,7 +278,7 @@ namespace Script {
         }
 
         Closure(const std::string &_name, size_t _start, size_t _end, const Position &_pos)
-                : name(_name), start(_start), end(_end), Value(kClosure, _pos) {
+                : Value(kClosure, _pos), name(_name), start(_start), end(_end) {
 
         }
 

@@ -140,7 +140,7 @@ namespace Script {
         if (tag.empty())
             fprintf(stderr, STD_FORMAT, cur_time(time), levels[lv], buffer);
         else
-            fprintf(stderr, STD_TAG_FORMAT, cur_time(time), levels[lv], tag.c_str(), buffer);
+            fprintf(stdout, STD_TAG_FORMAT, cur_time(time), levels[lv], tag.c_str(), buffer);
 
         delete[] buffer;
     }
@@ -200,6 +200,8 @@ namespace Script {
     }
 
     void Log::error(const std::string &msg, ...) {
+        if (ERROR < level)
+            return;
         va_list va;
         va_start(va, msg);
         format(ERROR, "", msg, va);
@@ -207,6 +209,8 @@ namespace Script {
     }
 
     void Log::error(const std::string tag, const std::string &msg, ...) {
+        if (ERROR < level)
+            return;
         va_list va;
         va_start(va, msg);
         format(ERROR, tag, msg, va);

@@ -16,11 +16,11 @@
 namespace Script {
 
     enum Tag {
-        kInt, kReal, kString, kRet, kCmp, kIf, kElif, kElse, kLoop, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF
+        kInt, kReal, kString, kRet, kCmp, kIf, kElif, kElse, kLoop, kNot, kAssign, kDef, kName, kLF, kEnd, kEOF, kNull
     };
 
     static const char *tag_descs[] = {"int", "real", "str", "return", "cmp", "if", "elif", "else",
-            "loop", "!", "=", "def", "var", "NEWLINE", "end", "EOF"};
+            "loop", "!", "=", "def", "var", "NEWLINE", "end", "EOF", "nil"};
 
     class Visualable {
     public:
@@ -70,21 +70,21 @@ namespace Script {
 
     class Token : public Visualable {
     public:
-        Tag tag;
         std::string content;
+        Tag tag;
         Position pos;
 
-        Token() {
+        Token() : Token("", kNull, Position::NULL_POS) {
         }
 
-        Token(size_t x, size_t y) : pos(x, y) {
+        Token(size_t x, size_t y) : Token("", kNull, Position(x, y)) {
         }
 
         Token(Tag _type) :
-                tag(_type) {
+                Token("", _type, Position::NULL_POS) {
         }
 
-        Token(const std::string content, Tag _type, const Position &_pos) :
+        Token(const std::string &content, Tag _type, const Position &_pos) :
                 content(content), tag(_type), pos(_pos) {
 
         }

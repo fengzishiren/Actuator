@@ -176,7 +176,7 @@ namespace Script {
         closure->name = tokens[1].content;
         expect(tokens[2].tag, (Tag) '(', tokens.front().pos);
 
-        for (int i = 3; i < tokens.size() - 1; ++i) {
+        for (size_t i = 3; i < tokens.size() - 1; ++i) {
             if (i % 2) {
                 expect(tokens[i].tag, kName, tokens[i].pos);
                 closure->args.push_back(tokens[i].content);
@@ -230,7 +230,6 @@ namespace Script {
                     inst.params.push_back(tok2arg(tokens[i]));
                     break;
                 default:
-                    Log::error(tokens[i].repr());
                     error(format("illegal arg: %s！", tokens[i].content.c_str()), tokens[i].pos);
             }
         }

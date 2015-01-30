@@ -72,7 +72,7 @@ namespace Script {
     class Log {
     public:
         enum Level {
-            DEBUG, INFO, WARN, ERROR
+            DEBUG, INFO, WARN, ERROR, CLOSE
         };
     private:
 

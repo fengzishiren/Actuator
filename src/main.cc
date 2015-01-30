@@ -38,9 +38,8 @@ static void usage(const char *message) {
     exit(EXIT_FAILURE);
 }
 
-//not found return -1
 static int str2level(std::string lv) {
-    int level = -1;
+    Script::Log::Level level;
     if (Script::upper(lv) == "DEBUG")
         level = Script::Log::DEBUG;
     else if (Script::upper(lv) == "INFO")
@@ -49,6 +48,8 @@ static int str2level(std::string lv) {
         level = Script::Log::WARN;
     else if (Script::upper(lv) == "ERROR")
         level = Script::Log::ERROR;
+    else
+        level = Script::Log::CLOSE;
     return level;
 }
 

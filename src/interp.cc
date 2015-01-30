@@ -43,14 +43,11 @@ namespace Script {
     }
 
     static void do_say(Env &env, Instruction &pc) {
-        //parser verify pc.params count
-        //must must be not less than 1
-        //assert(pc.params.size() > 0, "syntax error!", pc.pos);
-        std::cerr << eval(env, pc.params[0])->str();
+        std::cout << eval(env, pc.params[0])->str();
         for (size_t i = 1; i < pc.params.size(); ++i) {
-            std::cerr << ' ' << eval(env, pc.params[i])->str();
+            std::cout << ' ' << eval(env, pc.params[i])->str();
         }
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
 
     static void do_set(Env &env, Instruction &pc) {
@@ -169,7 +166,7 @@ namespace Script {
                     Log::debug(TAG, "env: " + env.repr());
                     Env *e = new Environment(env);
                     const Closure *closure = e->find_closure(pc.params[0]->repr());
-                    Log::debug(TAG, closure->repr());
+                    //Log::debug(TAG, closure->repr());
                     assert(pc.params.size() - 1 == closure->args.size(),
                             format("Function call parameters do not match! expect %zu, but given %zu",
                                     closure->args.size(), pc.params.size() - 1), pc.pos);
@@ -196,10 +193,7 @@ namespace Script {
 
     int Engine::launch() {
         Log::debug(TAG, "will be exe inst size:%d", insts.size());
-        Log::info(TAG, "will be exe inst lists:");
-        std::cerr << join(insts, '\n') << std::endl;
-
-        //throw 0;
+        Log::info(TAG, "will be exe inst lists:\n%s", join(insts, '\n').c_str());
         try {
             if (insts.size() > 0)
                 execute(*env, 0, insts.size() - 1);
