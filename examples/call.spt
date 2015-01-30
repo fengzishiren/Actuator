@@ -1,0 +1,36 @@
+def write()
+    say "write code"
+    say "Hello, World!"
+end
+
+def compile()
+    say "compile code"
+end
+
+def execute()
+    say "execute"
+end
+
+def knock_code()
+    write()
+    compile()
+    execute()
+end
+
+def open_pc(who)
+    say who "open pc"
+end
+
+def close_pc(who)
+    say who "close pc"
+end
+
+def main(who)
+    say "enter main:"
+    open_pc(who)
+    knock_code()
+    close_pc(who)
+    say "exit main."
+end
+main("zhenglinhai")
+say "The end"

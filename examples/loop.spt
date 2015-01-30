@@ -1,0 +1,5 @@
+a = 0
+loop a != 10
+    say "current a:" a
+    add a 1
+end

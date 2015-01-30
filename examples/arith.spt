@@ -1,0 +1,13 @@
+a = 0
+say "a:" a
+add a 1
+say "a + 1 =" a
+sub a 0
+say "a - 0 =" a
+mul a 100
+say "a * 100 = " a
+div a 25
+say "a / 25 =" a
+
+div a  0
+
